@@ -7,6 +7,7 @@ using Microsoft.Win32;
 using System.Reflection;
 using Pastee.App.Models;
 using Pastee.App.Services;
+using static Pastee.App.Services.ThemeService;
 
 namespace Pastee.App.Views
 {
@@ -29,12 +30,38 @@ namespace Pastee.App.Views
             
             InitializeAutoStartStatus();
             InitializeHideAfterPasteStatus();
+            InitializeThemeStatus();
             
             // 检查是否是管理员，显示管理员面板入口
             if (AdminService.IsAdminEmail(viewModel.UserEmail))
             {
                 AdminPanelSection.Visibility = Visibility.Visible;
             }
+        }
+
+        private void InitializeThemeStatus()
+        {
+            DarkModeCheckBox.IsChecked = ThemeService.CurrentTheme == AppTheme.Dark;
+            UpdateThemeIcon();
+        }
+
+        private void UpdateThemeIcon()
+        {
+            if (ThemeService.CurrentTheme == AppTheme.Dark)
+            {
+                ThemeIcon.Text = "🌙";
+            }
+            else
+            {
+                ThemeIcon.Text = "☀️";
+            }
+        }
+
+        private void OnThemeToggle(object sender, RoutedEventArgs e)
+        {
+            var newTheme = DarkModeCheckBox.IsChecked == true ? AppTheme.Dark : AppTheme.Light;
+            ThemeService.ApplyTheme(newTheme);
+            UpdateThemeIcon();
         }
 
         private void InitializeHideAfterPasteStatus()

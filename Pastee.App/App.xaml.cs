@@ -26,6 +26,10 @@ namespace Pastee.App
         {
             base.OnStartup(e);
 
+            // 加载并应用保存的主题
+            var savedTheme = ThemeService.LoadSavedTheme();
+            ThemeService.ApplyTheme(savedTheme);
+
             // 检查是否是 OAuth 回调启动
             if (OAuthHelper.TryParseOAuthCallback(e.Args, out var callbackToken))
             {

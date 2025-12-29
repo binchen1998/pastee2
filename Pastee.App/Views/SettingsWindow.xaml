@@ -141,6 +141,21 @@
                         <CheckBox x:Name="HideAfterPasteCheckBox" Grid.Column="2" Style="{StaticResource SwitchStyle}" VerticalAlignment="Center" Click="OnHideAfterPasteToggle"/>
                     </Grid>
 
+                    <!-- Theme Toggle -->
+                    <Grid Style="{StaticResource SettingItemStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="ThemeIcon" Text="🌙" FontSize="20" Foreground="#f39c12" VerticalAlignment="Top" Margin="0,5,0,0"/>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="Dark Mode" FontSize="15" FontWeight="Medium" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <TextBlock x:Name="ThemeDescription" Text="Switch between dark and light themes" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                        <CheckBox x:Name="DarkModeCheckBox" Grid.Column="2" Style="{StaticResource SwitchStyle}" VerticalAlignment="Center" Click="OnThemeToggle"/>
+                    </Grid>
+
                     <!-- Clear Cache -->
                     <Grid Style="{StaticResource SettingItemStyle}" Cursor="Hand" Background="Transparent" MouseLeftButtonDown="OnClearCacheClick">
                         <Grid.ColumnDefinitions>
