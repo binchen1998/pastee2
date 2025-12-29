@@ -42,11 +42,29 @@ namespace Pastee.App.Services
                     if (part == "Ctrl") modifiers |= NativeMethods.MOD_CONTROL;
                     else if (part == "Shift") modifiers |= NativeMethods.MOD_SHIFT;
                     else if (part == "Alt") modifiers |= NativeMethods.MOD_ALT;
+                    else if (part == "Win") modifiers |= NativeMethods.MOD_WIN;
                     else
                     {
+                        // 尝试直接解析按键名
                         if (Enum.TryParse(typeof(System.Windows.Input.Key), part, out object? k))
                         {
                             key = KeyInterop.VirtualKeyFromKey((System.Windows.Input.Key)k);
+                        }
+                        // 处理数字键 (0-9)
+                        else if (part.Length == 1 && char.IsDigit(part[0]))
+                        {
+                            if (Enum.TryParse(typeof(System.Windows.Input.Key), "D" + part, out object? numKey))
+                            {
+                                key = KeyInterop.VirtualKeyFromKey((System.Windows.Input.Key)numKey);
+                            }
+                        }
+                        // 处理小键盘数字 (Num0-Num9)
+                        else if (part.StartsWith("Num") && part.Length == 4 && char.IsDigit(part[3]))
+                        {
+                            if (Enum.TryParse(typeof(System.Windows.Input.Key), "NumPad" + part[3], out object? numPadKey))
+                            {
+                                key = KeyInterop.VirtualKeyFromKey((System.Windows.Input.Key)numPadKey);
+                            }
                         }
                     }
                 }
