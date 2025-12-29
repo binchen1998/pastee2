@@ -42,7 +42,8 @@
                     BorderThickness="1"
                     BorderBrush="Transparent"
                     MouseMove="ItemCard_MouseMove"
-                    PreviewMouseLeftButtonDown="ItemCard_PreviewMouseLeftButtonDown">
+                    PreviewMouseLeftButtonDown="ItemCard_PreviewMouseLeftButtonDown"
+                    MouseEnter="ItemCard_MouseEnter">
                 <Border.Style>
                     <Style TargetType="Border">
                         <Style.Triggers>
@@ -103,7 +104,8 @@
                     </ContentControl>
 
                     <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="0,4,0,0" x:Name="TimeInfo" Visibility="Hidden">
-                        <TextBlock Text="{Binding CreatedAt, Converter={StaticResource RelativeTimeConverter}}"
+                        <TextBlock x:Name="TimeText"
+                                   Text="{Binding CreatedAt, Converter={StaticResource RelativeTimeConverter}}"
                                    Foreground="{StaticResource TextSecondaryBrush}"
                                    FontFamily="{StaticResource MainFont}"
                                    FontSize="11"/>

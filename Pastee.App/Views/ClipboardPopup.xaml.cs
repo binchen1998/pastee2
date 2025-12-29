@@ -3,6 +3,8 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -361,6 +363,40 @@ namespace Pastee.App.Views
                     }
                 }
             }
+        }
+
+        private void ItemCard_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            // 刷新时间显示，使相对时间重新计算
+            if (sender is Border border)
+            {
+                var timeText = FindChild<TextBlock>(border, "TimeText");
+                if (timeText != null)
+                {
+                    var binding = BindingOperations.GetBindingExpression(timeText, TextBlock.TextProperty);
+                    binding?.UpdateTarget();
+                }
+            }
+        }
+
+        private T? FindChild<T>(DependencyObject parent, string childName) where T : DependencyObject
+        {
+            if (parent == null) return null;
+
+            int childrenCount = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < childrenCount; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                
+                if (child is T typedChild && child is FrameworkElement fe && fe.Name == childName)
+                {
+                    return typedChild;
+                }
+
+                var result = FindChild<T>(child, childName);
+                if (result != null) return result;
+            }
+            return null;
         }
 
         private void CategoryButton_DragOver(object sender, DragEventArgs e)
