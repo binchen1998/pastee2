@@ -24,8 +24,8 @@
     <SolidColorBrush x:Key="DeleteBrush" Color="{StaticResource DeleteColor}"/>
 
     <!-- Fonts -->
-    <FontFamily x:Key="MainFont">Segoe UI Variable, Segoe UI, sans-serif</FontFamily>
-    <FontFamily x:Key="MonoFont">Cascadia Code, Consolas, monospace</FontFamily>
+    <FontFamily x:Key="MainFont">Microsoft YaHei UI, Microsoft YaHei, Segoe UI, sans-serif</FontFamily>
+    <FontFamily x:Key="MonoFont">Cascadia Code, Consolas, Microsoft YaHei, monospace</FontFamily>
 
     <!-- Global Text Styles -->
     <Style TargetType="TextBlock">
