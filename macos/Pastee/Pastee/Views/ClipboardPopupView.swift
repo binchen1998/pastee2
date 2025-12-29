@@ -34,12 +34,11 @@ struct ClipboardPopupView: View {
                 mainContentView
             }
             .background(Theme.background)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .cornerRadius(12)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(Theme.border, lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.4), radius: 20)
             
             // Toast
             if viewModel.showToast {
@@ -58,7 +57,6 @@ struct ClipboardPopupView: View {
                 }
             }
         }
-        .padding(10)
         .onAppear {
             Task {
                 await viewModel.loadData()

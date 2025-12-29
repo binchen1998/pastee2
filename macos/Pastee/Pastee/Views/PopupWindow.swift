@@ -9,10 +9,16 @@ import SwiftUI
 import AppKit
 import Carbon.HIToolbox
 
-// 自定义HostingView：允许第一次点击直接传递到控件
+// 自定义HostingView：允许第一次点击直接传递到控件，透明背景
 class FirstClickHostingView<Content: View>: NSHostingView<Content> {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
         return true  // 关键：接受第一次鼠标点击
+    }
+    
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        // 确保背景透明
+        self.layer?.backgroundColor = .clear
     }
 }
 
