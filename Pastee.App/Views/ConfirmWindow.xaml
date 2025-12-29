@@ -1,0 +1,54 @@
+<Window x:Class="Pastee.App.Views.ConfirmWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Confirm" 
+        Height="200" Width="400"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="Transparent"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Topmost="True">
+    
+    <Border Background="{StaticResource BackgroundBrush}" CornerRadius="12" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Margin="10">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="20" ShadowDepth="0" Opacity="0.4" Color="Black"/>
+        </Border.Effect>
+        <Grid Margin="25">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Text="Confirm Action" 
+                       Foreground="{StaticResource TextPrimaryBrush}"
+                       FontWeight="SemiBold"
+                       FontSize="18"
+                       Margin="0,0,0,15"/>
+
+            <TextBlock x:Name="MessageText" 
+                       Grid.Row="1"
+                       Text="Are you sure you want to delete this item?"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="14"
+                       TextWrapping="Wrap"/>
+
+            <StackPanel Grid.Row="2"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Margin="0,20,0,0">
+                <Button Content="Cancel"
+                        Style="{StaticResource LinkButtonStyle}"
+                        Margin="0,0,15,0"
+                        Click="OnCancel"/>
+                <Button Content="Delete"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Background="{StaticResource DeleteBrush}"
+                        MinWidth="100"
+                        Click="OnConfirm"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>
+
