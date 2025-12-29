@@ -60,8 +60,46 @@ namespace Pastee.App.Views
         private void OnThemeToggle(object sender, RoutedEventArgs e)
         {
             var newTheme = DarkModeCheckBox.IsChecked == true ? AppTheme.Dark : AppTheme.Light;
-            ThemeService.ApplyTheme(newTheme);
+            ThemeService.SaveTheme(newTheme);
             UpdateThemeIcon();
+            
+            // 询问用户是否重启应用
+            var themeName = newTheme == AppTheme.Dark ? "Dark Mode" : "Light Mode";
+            var result = MessageBox.Show(
+                $"Theme changed to {themeName}.\n\nRestart the app now to apply changes?",
+                "Restart Required",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            
+            if (result == MessageBoxResult.Yes)
+            {
+                RestartApplication();
+            }
+        }
+
+        private void RestartApplication()
+        {
+            try
+            {
+                // 获取当前可执行文件路径
+                var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+                if (!string.IsNullOrEmpty(exePath))
+                {
+                    // 启动新实例
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = exePath,
+                        UseShellExecute = true
+                    });
+                    
+                    // 关闭当前应用
+                    Application.Current.Shutdown();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to restart: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void InitializeHideAfterPasteStatus()
