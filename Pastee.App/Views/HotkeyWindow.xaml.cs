@@ -162,17 +162,25 @@ namespace Pastee.App.Views
 
         private string ConvertKeyName(Key key)
         {
+            // 字母键 A-Z
+            if (key >= Key.A && key <= Key.Z)
+                return key.ToString();
+            
+            // 数字键 0-9
+            if (key >= Key.D0 && key <= Key.D9)
+                return key.ToString().Substring(1);
+            
+            // 小键盘数字
+            if (key >= Key.NumPad0 && key <= Key.NumPad9)
+                return "Num" + key.ToString().Substring(6);
+            
+            // 功能键 F1-F12
+            if (key >= Key.F1 && key <= Key.F12)
+                return key.ToString();
+
+            // 特殊键
             return key switch
             {
-                // 字母键
-                >= Key.A and <= Key.Z => key.ToString(),
-                // 数字键
-                >= Key.D0 and <= Key.D9 => key.ToString().Substring(1),
-                // 小键盘数字
-                >= Key.NumPad0 and <= Key.NumPad9 => "Num" + key.ToString().Substring(6),
-                // 功能键
-                >= Key.F1 and <= Key.F12 => key.ToString(),
-                // 特殊键
                 Key.Space => "Space",
                 Key.Tab => "Tab",
                 Key.Enter => "Enter",
