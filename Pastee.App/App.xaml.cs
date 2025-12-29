@@ -12,6 +12,7 @@ namespace Pastee.App
     public partial class App : Application
     {
         private static Mutex? _mutex;
+        private static bool _mutexOwned = false;
         private const string MutexName = "PasteeApp_SingleInstance_Mutex";
         private readonly AuthService _authService = new AuthService();
         private CancellationTokenSource? _pipeCts;
@@ -42,6 +43,7 @@ namespace Pastee.App
 
             // 单实例检查
             _mutex = new Mutex(true, MutexName, out bool createdNew);
+            _mutexOwned = createdNew;
             if (!createdNew)
             {
                 // 已有实例在运行，显示提示（非 OAuth 回调的情况）
@@ -93,8 +95,21 @@ namespace Pastee.App
         {
             _pipeCts?.Cancel();
             _pipeCts?.Dispose();
-            _mutex?.ReleaseMutex();
+            
+            // 只有当我们拥有 Mutex 时才释放它
+            if (_mutex != null && _mutexOwned)
+            {
+                try
+                {
+                    _mutex.ReleaseMutex();
+                }
+                catch (ApplicationException)
+                {
+                    // Mutex 可能已经被释放或不属于当前线程
+                }
+            }
             _mutex?.Dispose();
+            
             base.OnExit(e);
         }
     }
