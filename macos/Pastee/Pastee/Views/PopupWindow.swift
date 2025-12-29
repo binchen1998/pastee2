@@ -26,7 +26,8 @@ class PopupWindow: NSPanel {
     init() {
         super.init(
             contentRect: NSRect(x: 0, y: 0, width: 520, height: 500),
-            styleMask: [.titled, .closable, .resizable, .nonactivatingPanel, .fullSizeContentView, .utilityWindow],
+            // 无边框、无标题栏的浮动面板
+            styleMask: [.borderless, .nonactivatingPanel, .utilityWindow],
             backing: .buffered,
             defer: false
         )
@@ -34,8 +35,6 @@ class PopupWindow: NSPanel {
         // 关键设置：浮动窗口，不激活应用
         self.level = .floating
         self.isMovableByWindowBackground = true
-        self.titleVisibility = .hidden
-        self.titlebarAppearsTransparent = true
         self.backgroundColor = .clear
         self.isOpaque = false
         self.hasShadow = true
