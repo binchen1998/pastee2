@@ -84,6 +84,12 @@ class MainViewModel: ObservableObject {
                 self?.wsStatusColor = .red
             }
         }
+        
+        // 检查当前连接状态（可能在设置回调前已经连接）
+        if WebSocketService.shared.isConnected {
+            wsStatus = "Connected"
+            wsStatusColor = .green
+        }
     }
     
     // MARK: - Data Loading
