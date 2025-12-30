@@ -121,6 +121,8 @@ struct ImageViewerView: View {
     }
     
     private func closeWindow() {
+        // 停止 modal 并关闭窗口
+        NSApp.stopModal()
         NSApp.keyWindow?.close()
     }
     
@@ -129,52 +131,40 @@ struct ImageViewerView: View {
     }
 }
 
-// 图片查看器窗口管理器
-class ImageViewerWindowController: NSWindowController, NSWindowDelegate {
-    static var activeWindows: [ImageViewerWindowController] = []
-    
-    init(data: Data, title: String) {
+// 自定义 Panel 支持键盘输入
+class ImageViewerPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+}
+
+// 创建图片查看器窗口（Modal）
+func showImageViewer(data: Data, title: String = "Image Viewer") {
+    // 使用 DispatchQueue 避免在 transaction 中调用 modal
+    DispatchQueue.main.async {
         let view = ImageViewerView(imageData: data, title: title)
         
-        // 使用 borderless 样式，与 Settings 窗口一致
-        let window = NSPanel(
+        let modalWindow = ImageViewerPanel(
             contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
             styleMask: [.borderless, .resizable, .utilityWindow],
             backing: .buffered,
             defer: false
         )
-        window.isMovableByWindowBackground = true
-        window.backgroundColor = .clear
-        window.isOpaque = false
-        window.hasShadow = true
-        window.level = .floating
-        window.center()
+        modalWindow.isMovableByWindowBackground = true
+        modalWindow.backgroundColor = .clear
+        modalWindow.isOpaque = false
+        modalWindow.hasShadow = true
+        modalWindow.level = .modalPanel
+        modalWindow.center()
         
         let hostingView = NSHostingView(rootView: view)
         hostingView.wantsLayer = true
         hostingView.layer?.backgroundColor = .clear
-        window.contentView = hostingView
+        modalWindow.contentView = hostingView
         
-        super.init(window: window)
-        window.delegate = self
+        // 运行 modal
+        NSApp.runModal(for: modalWindow)
+        modalWindow.close()
     }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    func windowWillClose(_ notification: Notification) {
-        // 从活动窗口列表中移除
-        ImageViewerWindowController.activeWindows.removeAll { $0 === self }
-    }
-}
-
-// 创建图片查看器窗口
-func showImageViewer(data: Data, title: String = "Image Viewer") {
-    let controller = ImageViewerWindowController(data: data, title: title)
-    // 保持强引用
-    ImageViewerWindowController.activeWindows.append(controller)
-    controller.showWindow(nil)
 }
 
 // MARK: - Preview
