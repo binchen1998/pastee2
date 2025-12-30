@@ -428,12 +428,10 @@ struct FocusableTextField: NSViewRepresentable {
         // 当按下 Enter 键时也会触发这个 (备用方案)
         func controlTextDidEndEditing(_ obj: Notification) {
             print("⚡️ [FocusableTextField] controlTextDidEndEditing")
-            if let textField = obj.object as? NSTextField {
-                // 检查是否是因为按了 Enter 键
-                if let event = NSApp.currentEvent, event.keyCode == 36 { // 36 是 Enter 键
-                    print("⚡️ [FocusableTextField] Enter detected in controlTextDidEndEditing")
-                    parent.onSubmit()
-                }
+            // 检查是否是因为按了 Enter 键 - 必须先检查事件类型
+            if let event = NSApp.currentEvent, event.type == .keyDown, event.keyCode == 36 { // 36 是 Enter 键
+                print("⚡️ [FocusableTextField] Enter detected in controlTextDidEndEditing")
+                parent.onSubmit()
             }
         }
     }
