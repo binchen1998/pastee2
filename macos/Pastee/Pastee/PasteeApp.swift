@@ -190,16 +190,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func showLoginWindow() {
         if loginWindow == nil {
-            let loginView = LoginView {
-                // 登录成功回调
-                print("⚡️ [AppDelegate] Login success callback - Step 1: closing login window")
-                self.loginWindow?.close()
-                self.loginWindow = nil
-                print("⚡️ [AppDelegate] Login success callback - Step 2: calling startApp()")
-                self.startApp()
-                print("⚡️ [AppDelegate] Login success callback - Step 3: calling showPopup()")
-                self.showPopup()
-                print("⚡️ [AppDelegate] Login success callback - Step 4: done")
+            let loginView = LoginView { [weak self] in
+                guard let self = self else { return }
+                // 登录成功回调 - 使用 DispatchQueue 避免在闭包中直接操作窗口
+                DispatchQueue.main.async {
+                    print("⚡️ [AppDelegate] Login success callback - Step 1: starting app")
+                    self.startApp()
+                    
+                    print("⚡️ [AppDelegate] Login success callback - Step 2: showing popup")
+                    self.showPopup()
+                    
+                    print("⚡️ [AppDelegate] Login success callback - Step 3: scheduling login window close")
+                    // 延迟关闭登录窗口，等待动画完成
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        print("⚡️ [AppDelegate] Login success callback - Step 4: closing login window")
+                        self.loginWindow?.orderOut(nil)  // 先隐藏，不带动画
+                        self.loginWindow?.close()
+                        self.loginWindow = nil
+                        print("⚡️ [AppDelegate] Login success callback - Step 5: done")
+                    }
+                }
             }
             
             loginWindow = NSWindow(
@@ -208,6 +218,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 backing: .buffered,
                 defer: false
             )
+            loginWindow?.isReleasedWhenClosed = false  // 防止关闭时自动释放
             loginWindow?.titlebarAppearsTransparent = true
             loginWindow?.titleVisibility = .hidden
             loginWindow?.isMovableByWindowBackground = true
