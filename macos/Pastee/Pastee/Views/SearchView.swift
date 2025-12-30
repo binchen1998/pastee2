@@ -349,16 +349,12 @@ struct FocusableTextField: NSViewRepresentable {
         textField.target = context.coordinator
         textField.action = #selector(Coordinator.textFieldAction(_:))
         
-        // 设置光标颜色
-        if let fieldEditor = textField.window?.fieldEditor(true, for: textField) as? NSTextView {
-            fieldEditor.insertionPointColor = NSColor(Theme.textPrimary)
-        }
-        
         return textField
     }
     
     func updateNSView(_ nsView: NSTextField, context: Context) {
-        if nsView.stringValue != text {
+        // 只在用户没有正在编辑时才更新文本，避免打断输入
+        if nsView.currentEditor() == nil && nsView.stringValue != text {
             nsView.stringValue = text
         }
         
@@ -369,23 +365,10 @@ struct FocusableTextField: NSViewRepresentable {
         if shouldFocus {
             shouldFocus = false  // 先重置，避免重复触发
             
-            // 使用更长的延迟确保 modal 窗口完全准备好
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 guard let window = nsView.window else { return }
-                
-                // 确保窗口是 key window
                 window.makeKey()
-                
-                // 聚焦到输入框
-                let success = window.makeFirstResponder(nsView)
-                print("⚡️ [FocusableTextField] makeFirstResponder: \(success)")
-                
-                // 设置光标颜色 - 需要在成为 firstResponder 后设置
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    if let fieldEditor = window.fieldEditor(true, for: nsView) as? NSTextView {
-                        fieldEditor.insertionPointColor = NSColor(Theme.textPrimary)
-                    }
-                }
+                window.makeFirstResponder(nsView)
             }
         }
     }
@@ -394,7 +377,7 @@ struct FocusableTextField: NSViewRepresentable {
         Coordinator(self)
     }
     
-    class Coordinator: NSObject, NSTextFieldDelegate, NSControlTextEditingDelegate {
+    class Coordinator: NSObject, NSTextFieldDelegate {
         var parent: FocusableTextField
         
         init(_ parent: FocusableTextField) {
@@ -411,27 +394,6 @@ struct FocusableTextField: NSViewRepresentable {
         func controlTextDidChange(_ obj: Notification) {
             if let textField = obj.object as? NSTextField {
                 parent.text = textField.stringValue
-            }
-        }
-        
-        // 处理键盘命令，包括 Enter 键
-        func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-            print("⚡️ [FocusableTextField] doCommandBy: \(commandSelector)")
-            if commandSelector == #selector(NSResponder.insertNewline(_:)) {
-                print("⚡️ [FocusableTextField] Enter key pressed, calling onSubmit")
-                parent.onSubmit()
-                return true
-            }
-            return false
-        }
-        
-        // 当按下 Enter 键时也会触发这个 (备用方案)
-        func controlTextDidEndEditing(_ obj: Notification) {
-            print("⚡️ [FocusableTextField] controlTextDidEndEditing")
-            // 检查是否是因为按了 Enter 键 - 必须先检查事件类型
-            if let event = NSApp.currentEvent, event.type == .keyDown, event.keyCode == 36 { // 36 是 Enter 键
-                print("⚡️ [FocusableTextField] Enter detected in controlTextDidEndEditing")
-                parent.onSubmit()
             }
         }
     }
