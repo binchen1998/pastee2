@@ -123,9 +123,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func startApp() {
+        print("⚡️ [AppDelegate] startApp - Step 1: starting clipboard watcher")
         // 启动剪贴板监控（先启动，不依赖权限检查）
         clipboardWatcher.start()
         
+        print("⚡️ [AppDelegate] startApp - Step 2: registering hotkey")
         // 注册全局快捷键
         let settings = settingsManager.load()
         hotkeyService.register(hotkey: settings.hotkey)
@@ -134,33 +136,44 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.togglePopup()
         }
         
+        print("⚡️ [AppDelegate] startApp - Step 3: connecting WebSocket")
         // 连接WebSocket
         if let token = authService.getToken() {
             let deviceId = authService.getDeviceId()
             webSocketService.connect(token: token, deviceId: deviceId)
         }
         
+        print("⚡️ [AppDelegate] startApp - Step 4: checking for updates")
         // 检查更新
         Task {
             await UpdateService.shared.checkForUpdate()
         }
         
+        print("⚡️ [AppDelegate] startApp - Step 5: showing popup")
         // 程序启动后显示主窗口
         showPopup()
         
+        print("⚡️ [AppDelegate] startApp - Step 6: scheduling accessibility check")
         // 延迟检查辅助功能权限（避免在窗口切换时调用 runModal 导致崩溃）
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            print("⚡️ [AppDelegate] startApp - Step 7: checking accessibility permission")
             self?.checkAccessibilityPermission()
+            print("⚡️ [AppDelegate] startApp - Step 8: accessibility check done")
         }
+        print("⚡️ [AppDelegate] startApp - completed (accessibility check scheduled)")
     }
     
     // MARK: - Window Management
     
     @objc func showPopup() {
+        print("⚡️ [AppDelegate] showPopup - start")
         if popupWindow == nil {
+            print("⚡️ [AppDelegate] showPopup - creating PopupWindow")
             popupWindow = PopupWindow()
         }
+        print("⚡️ [AppDelegate] showPopup - calling popupWindow.showPopup()")
         popupWindow?.showPopup()
+        print("⚡️ [AppDelegate] showPopup - done")
     }
     
     func hidePopup() {
@@ -179,10 +192,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if loginWindow == nil {
             let loginView = LoginView {
                 // 登录成功回调
+                print("⚡️ [AppDelegate] Login success callback - Step 1: closing login window")
                 self.loginWindow?.close()
                 self.loginWindow = nil
+                print("⚡️ [AppDelegate] Login success callback - Step 2: calling startApp()")
                 self.startApp()
+                print("⚡️ [AppDelegate] Login success callback - Step 3: calling showPopup()")
                 self.showPopup()
+                print("⚡️ [AppDelegate] Login success callback - Step 4: done")
             }
             
             loginWindow = NSWindow(
@@ -328,18 +345,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private static let kDontShowAccessibilityPrompt = "dontShowAccessibilityPrompt"
     
     private func checkAccessibilityPermission() {
+        print("⚡️ [AppDelegate] checkAccessibilityPermission - checking AXIsProcessTrusted")
         let trusted = AXIsProcessTrusted()
+        print("⚡️ [AppDelegate] checkAccessibilityPermission - trusted: \(trusted)")
         
         if !trusted {
             // 检查用户是否选择了不再提示
             let dontShow = UserDefaults.standard.bool(forKey: AppDelegate.kDontShowAccessibilityPrompt)
+            print("⚡️ [AppDelegate] checkAccessibilityPermission - dontShow: \(dontShow)")
             if !dontShow {
+                print("⚡️ [AppDelegate] checkAccessibilityPermission - showing dialog")
                 showAccessibilityPermissionDialog()
+                print("⚡️ [AppDelegate] checkAccessibilityPermission - dialog closed")
             }
         }
+        print("⚡️ [AppDelegate] checkAccessibilityPermission - done")
     }
     
     private func showAccessibilityPermissionDialog() {
+        print("⚡️ [AppDelegate] showAccessibilityPermissionDialog - creating alert")
         let alert = NSAlert()
         alert.messageText = "需要辅助功能权限"
         alert.informativeText = """
@@ -361,7 +385,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         alert.addButton(withTitle: "打开系统设置")
         alert.addButton(withTitle: "稍后再说")
         
+        print("⚡️ [AppDelegate] showAccessibilityPermissionDialog - running modal")
         let response = alert.runModal()
+        print("⚡️ [AppDelegate] showAccessibilityPermissionDialog - modal returned: \(response)")
         
         // 保存用户的"不再提示"选择
         if checkbox.state == .on {
@@ -370,8 +396,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         if response == .alertFirstButtonReturn {
             // 打开系统设置的辅助功能页面
+            print("⚡️ [AppDelegate] showAccessibilityPermissionDialog - opening settings")
             openAccessibilitySettings()
         }
+        print("⚡️ [AppDelegate] showAccessibilityPermissionDialog - done")
     }
     
     private func openAccessibilitySettings() {
