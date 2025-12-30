@@ -16,7 +16,6 @@ struct SearchView: View {
     @State private var showToast = false
     @State private var currentPage = 1
     @State private var hasMore = false
-    @State private var shouldFocusSearchField = false
     @ObservedObject private var themeManager = ThemeManager.shared
     
     let onSelect: (ClipboardEntry) -> Void
@@ -42,28 +41,42 @@ struct SearchView: View {
                             .frame(width: 24, height: 24)
                     }
                     .buttonStyle(.plain)
-                    .help("Close (Esc)")
+                    .help("Close")
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
                 .padding(.bottom, 15)
                 
-                // 搜索输入框
-                HStack {
-                    FocusableTextField(
-                        text: $searchText,
-                        placeholder: "Type and press Enter to search...",
-                        shouldFocus: $shouldFocusSearchField,
-                        onSubmit: {
-                            print("⚡️ [SearchView] onSubmit closure called")
-                            Task { 
-                                print("⚡️ [SearchView] onSubmit Task started")
-                                await search() 
-                            }
-                        }
-                    )
-                    .frame(height: 20)
+                // 搜索输入框和按钮
+                HStack(spacing: 10) {
+                    TextField("Type to search...", text: $searchText)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 14))
+                        .foregroundColor(Theme.textPrimary)
+                        .padding(10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Theme.surface)
+                        )
                     
+                    // 搜索按钮
+                    Button(action: {
+                        Task { await search() }
+                    }) {
+                        Text("Search")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Theme.accent)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(searchText.isEmpty || isSearching)
+                    
+                    // 清除按钮
                     if !searchText.isEmpty {
                         Button(action: {
                             searchText = ""
@@ -73,15 +86,11 @@ struct SearchView: View {
                             Text("✕")
                                 .font(.system(size: 12))
                                 .foregroundColor(Theme.textSecondary)
+                                .frame(width: 24, height: 24)
                         }
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(12)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Theme.surface)
-                )
                 .padding(.horizontal, 20)
                 .padding(.bottom, 15)
                 
@@ -109,10 +118,14 @@ struct SearchView: View {
                         
                         // 状态指示器
                         if isSearching {
-                            Text("Searching...")
-                                .font(.system(size: 14))
-                                .foregroundColor(Theme.textSecondary)
-                                .padding(20)
+                            HStack(spacing: 8) {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                Text("Searching...")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(Theme.textSecondary)
+                            }
+                            .padding(20)
                         } else if hasSearched && results.isEmpty {
                             VStack(spacing: 10) {
                                 Text("😔")
@@ -126,7 +139,7 @@ struct SearchView: View {
                             VStack(spacing: 10) {
                                 Text("🔎")
                                     .font(.system(size: 32))
-                                Text("Press Enter to search")
+                                Text("Click Search button to search")
                                     .font(.system(size: 14))
                                     .foregroundColor(Theme.textSecondary)
                             }
@@ -162,31 +175,20 @@ struct SearchView: View {
                 .stroke(Theme.border, lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.5), radius: 20)
-        .onAppear {
-            // Modal 窗口需要更长的延迟来确保完全准备好
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                shouldFocusSearchField = true
-            }
-        }
+        .environment(\.colorScheme, themeManager.isDarkMode ? .dark : .light)
     }
     
     // MARK: - Actions
     
     private func search() async {
-        print("⚡️ [SearchView] search() called, searchText: '\(searchText)'")
-        guard !searchText.isEmpty else { 
-            print("⚡️ [SearchView] search() - searchText is empty, returning")
-            return 
-        }
+        guard !searchText.isEmpty else { return }
         
         isSearching = true
         hasSearched = true
         currentPage = 1
         
         do {
-            print("⚡️ [SearchView] search() - calling API...")
             let response = try await APIService.shared.searchItems(query: searchText, page: 1)
-            print("⚡️ [SearchView] search() - got \(response.items.count) results")
             var items = response.items
             for i in items.indices {
                 items[i].initializeImageState()
@@ -194,7 +196,7 @@ struct SearchView: View {
             results = items
             hasMore = response.hasMoreItems
         } catch {
-            print("⚡️ [SearchView] search() - error: \(error)")
+            print("⚡️ [SearchView] search error: \(error)")
             results = []
         }
         
@@ -248,7 +250,6 @@ struct SearchView: View {
     }
     
     private func closeWindow() {
-        // 关闭窗口
         if let window = NSApp.keyWindow {
             window.close()
         }
@@ -327,81 +328,8 @@ struct SearchResultCard: View {
     }
 }
 
-// MARK: - FocusableTextField
-
-struct FocusableTextField: NSViewRepresentable {
-    @Binding var text: String
-    var placeholder: String
-    @Binding var shouldFocus: Bool
-    var onSubmit: () -> Void
-    
-    func makeNSView(context: Context) -> NSTextField {
-        let textField = NSTextField()
-        textField.placeholderString = placeholder
-        textField.isBordered = false
-        textField.drawsBackground = false
-        textField.focusRingType = .none
-        textField.font = .systemFont(ofSize: 14)
-        textField.textColor = NSColor(Theme.textPrimary)
-        textField.delegate = context.coordinator
-        
-        // 设置 action 用于处理 Enter 键
-        textField.target = context.coordinator
-        textField.action = #selector(Coordinator.textFieldAction(_:))
-        
-        return textField
-    }
-    
-    func updateNSView(_ nsView: NSTextField, context: Context) {
-        // 只在用户没有正在编辑时才更新文本，避免打断输入
-        if nsView.currentEditor() == nil && nsView.stringValue != text {
-            nsView.stringValue = text
-        }
-        
-        // 更新文字颜色（主题切换时）
-        nsView.textColor = NSColor(Theme.textPrimary)
-        
-        // 当 shouldFocus 变为 true 时，让窗口成为 key 并聚焦到输入框
-        if shouldFocus {
-            shouldFocus = false  // 先重置，避免重复触发
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                guard let window = nsView.window else { return }
-                window.makeKey()
-                window.makeFirstResponder(nsView)
-            }
-        }
-    }
-    
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-    
-    class Coordinator: NSObject, NSTextFieldDelegate {
-        var parent: FocusableTextField
-        
-        init(_ parent: FocusableTextField) {
-            self.parent = parent
-        }
-        
-        // NSTextField action - 当按下 Enter 键时触发
-        @objc func textFieldAction(_ sender: NSTextField) {
-            print("⚡️ [FocusableTextField] textFieldAction triggered (Enter key)")
-            parent.text = sender.stringValue
-            parent.onSubmit()
-        }
-        
-        func controlTextDidChange(_ obj: Notification) {
-            if let textField = obj.object as? NSTextField {
-                parent.text = textField.stringValue
-            }
-        }
-    }
-}
-
 // MARK: - Preview
 
 #Preview {
     SearchView(onSelect: { _ in })
 }
-
