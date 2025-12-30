@@ -164,7 +164,10 @@ class AuthService {
     // MARK: - User Info
     
     func getUserInfo() async throws -> UserInfo? {
-        guard let token = getToken() else { return nil }
+        guard let token = getToken() else {
+            print("⚡️ [Auth] getUserInfo: No token available")
+            return nil
+        }
         
         let url = URL(string: "\(baseURL)/auth/me")!
         var request = URLRequest(url: url)
@@ -172,18 +175,37 @@ class AuthService {
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
-        guard let httpResponse = response as? HTTPURLResponse else { return nil }
+        guard let httpResponse = response as? HTTPURLResponse else {
+            print("⚡️ [Auth] getUserInfo: Invalid response")
+            return nil
+        }
+        
+        print("⚡️ [Auth] getUserInfo: Status \(httpResponse.statusCode)")
         
         if httpResponse.statusCode == 401 {
             logout()
             return nil
         }
         
-        guard httpResponse.statusCode == 200 else { return nil }
+        guard httpResponse.statusCode == 200 else {
+            print("⚡️ [Auth] getUserInfo: Failed with status \(httpResponse.statusCode)")
+            return nil
+        }
         
-        let userInfo = try JSONDecoder().decode(UserInfo.self, from: data)
-        cachedUserInfo = userInfo
-        return userInfo
+        // 打印原始响应数据
+        if let jsonString = String(data: data, encoding: .utf8) {
+            print("⚡️ [Auth] getUserInfo response: \(jsonString)")
+        }
+        
+        do {
+            let userInfo = try JSONDecoder().decode(UserInfo.self, from: data)
+            cachedUserInfo = userInfo
+            print("⚡️ [Auth] getUserInfo: Success - email: \(userInfo.email)")
+            return userInfo
+        } catch {
+            print("⚡️ [Auth] getUserInfo decode error: \(error)")
+            return nil
+        }
     }
     
     func getCachedUserInfo() -> UserInfo? {

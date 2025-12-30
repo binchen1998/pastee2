@@ -331,11 +331,18 @@ struct SettingsView: View {
         
         // 加载用户信息
         Task {
-            if let userInfo = try? await AuthService.shared.getUserInfo() {
-                await MainActor.run {
-                    email = userInfo.email
-                    isAdmin = userInfo.email.lowercased() == "admin@pastee.im"
+            do {
+                if let userInfo = try await AuthService.shared.getUserInfo() {
+                    await MainActor.run {
+                        email = userInfo.email
+                        isAdmin = userInfo.email.lowercased() == "admin@pastee.im"
+                        print("⚡️ [Settings] Loaded email: \(userInfo.email)")
+                    }
+                } else {
+                    print("⚡️ [Settings] getUserInfo returned nil")
                 }
+            } catch {
+                print("⚡️ [Settings] getUserInfo error: \(error)")
             }
         }
     }
