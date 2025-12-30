@@ -101,7 +101,7 @@ namespace Pastee.App.Models
         {
             if (ContentType != "image") return;
 
-            // 1. 优先级：后端返回的缩略图 (通常在 Content 中)
+            // 1. 优先级：后端返回的缩略图 (通常在 Content 中，是 base64 格式)
             if (!string.IsNullOrEmpty(Content) && FlexibleStringConverter.IsBase64Like(Content))
             {
                 DisplayImageData = Content;
@@ -111,7 +111,13 @@ namespace Pastee.App.Models
             else if (!string.IsNullOrEmpty(Thumbnail))
             {
                 DisplayImageData = Thumbnail;
-                IsThumbnail = !Thumbnail.Contains("original"); // 简单的逻辑判断是否为缩略图
+                // 判断是否为缩略图：
+                // - 如果是本地文件路径（不是 base64），则是原图
+                // - 如果路径包含 "orig" 前缀，则是下载的原图
+                // - 只有 base64 格式的才是缩略图
+                bool isLocalFilePath = Thumbnail.Contains(":\\") || Thumbnail.StartsWith("/");
+                bool isOriginalImage = Thumbnail.Contains("orig_") || Thumbnail.Contains("original");
+                IsThumbnail = !isLocalFilePath && !isOriginalImage && FlexibleStringConverter.IsBase64Like(Thumbnail);
             }
         }
 
