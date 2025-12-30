@@ -15,8 +15,6 @@ struct SettingsView: View {
     @State private var autoStart = false
     @State private var hideAfterPaste = true
     @State private var showHotkeySettings = false
-    @State private var showAdminPanel = false
-    @State private var isAdmin = false
     
     let onLogout: () -> Void
     
@@ -59,40 +57,6 @@ struct SettingsView: View {
                                     .font(.system(size: 15, weight: .medium))
                                     .foregroundColor(Theme.textPrimary)
                             }
-                        }
-                        
-                        // Admin Panel (仅管理员可见)
-                        if isAdmin {
-                            Button(action: { showAdminPanel = true }) {
-                                HStack {
-                                    HStack(spacing: 12) {
-                                        Text("🛠")
-                                            .font(.system(size: 20))
-                                        
-                                        VStack(alignment: .leading) {
-                                            Text("Admin Panel")
-                                                .font(.system(size: 15, weight: .medium))
-                                                .foregroundColor(Theme.accent)
-                                            Text("Manage users, versions, and settings")
-                                                .font(.system(size: 12))
-                                                .foregroundColor(Theme.textSecondary)
-                                        }
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    Text("→")
-                                        .font(.system(size: 18))
-                                        .foregroundColor(Theme.textSecondary)
-                                }
-                                .padding(15)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(Theme.surface)
-                                )
-                            }
-                            .buttonStyle(.plain)
-                            .padding(.top, 15)
                         }
                         
                         Divider()
@@ -335,7 +299,6 @@ struct SettingsView: View {
                 if let userInfo = try await AuthService.shared.getUserInfo() {
                     await MainActor.run {
                         email = userInfo.email
-                        isAdmin = userInfo.email.lowercased() == "admin@pastee.im"
                         print("⚡️ [Settings] Loaded email: \(userInfo.email)")
                     }
                 } else {
