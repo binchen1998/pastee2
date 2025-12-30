@@ -431,13 +431,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func handleURL(_ event: NSAppleEventDescriptor, withReplyEvent replyEvent: NSAppleEventDescriptor) {
         guard let urlString = event.paramDescriptor(forKeyword: AEKeyword(keyDirectObject))?.stringValue,
               let url = URL(string: urlString),
-              url.scheme == "pastee",
+              (url.scheme == "pastee" || url.scheme == "pastee-macos"),
               url.host == "oauth",
               url.path == "/callback",
               let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
               let token = components.queryItems?.first(where: { $0.name == "token" })?.value else {
+            print("⚡️ [OAuth] Invalid callback URL: \(event.paramDescriptor(forKeyword: AEKeyword(keyDirectObject))?.stringValue ?? "nil")")
             return
         }
+        
+        print("⚡️ [OAuth] Received callback with token")
         
         // 保存token并完成登录
         authService.saveToken(token)

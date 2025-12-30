@@ -40,6 +40,7 @@
             <key>CFBundleURLSchemes</key>
             <array>
                 <string>pastee</string>
+                <string>pastee-macos</string>
             </array>
         </dict>
     </array>
