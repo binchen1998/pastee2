@@ -23,8 +23,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem?
     var popupWindow: PopupWindow?
     var loginWindow: NSWindow?
-    var settingsWindow: NSWindow?
-    var searchWindow: NSWindow?
+    var settingsWindow: NSPanel?
+    var searchWindow: NSPanel?
     
     let authService = AuthService.shared
     let clipboardWatcher = ClipboardWatcher.shared
@@ -109,6 +109,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         Task {
             await UpdateService.shared.checkForUpdate()
         }
+        
+        // 程序启动后显示主窗口
+        showPopup()
     }
     
     // MARK: - Window Management
@@ -174,16 +177,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.showLoginWindow()
             }
             
-            settingsWindow = NSWindow(
+            settingsWindow = NSPanel(
                 contentRect: NSRect(x: 0, y: 0, width: 500, height: 650),
-                styleMask: [.titled, .closable, .fullSizeContentView],
+                styleMask: [.borderless, .nonactivatingPanel, .utilityWindow],
                 backing: .buffered,
                 defer: false
             )
-            settingsWindow?.titlebarAppearsTransparent = true
-            settingsWindow?.titleVisibility = .hidden
             settingsWindow?.isMovableByWindowBackground = true
             settingsWindow?.backgroundColor = .clear
+            settingsWindow?.isOpaque = false
+            settingsWindow?.hasShadow = true
             settingsWindow?.level = .floating
             settingsWindow?.center()
             settingsWindow?.contentView = NSHostingView(rootView: settingsView)
@@ -201,16 +204,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.searchWindow?.close()
             }
             
-            searchWindow = NSWindow(
+            searchWindow = NSPanel(
                 contentRect: NSRect(x: 0, y: 0, width: 480, height: 500),
-                styleMask: [.titled, .closable, .resizable, .fullSizeContentView],
+                styleMask: [.borderless, .nonactivatingPanel, .utilityWindow],
                 backing: .buffered,
                 defer: false
             )
-            searchWindow?.titlebarAppearsTransparent = true
-            searchWindow?.titleVisibility = .hidden
             searchWindow?.isMovableByWindowBackground = true
             searchWindow?.backgroundColor = .clear
+            searchWindow?.isOpaque = false
+            searchWindow?.hasShadow = true
             searchWindow?.level = .floating
             searchWindow?.center()
             searchWindow?.contentView = NSHostingView(rootView: searchView)

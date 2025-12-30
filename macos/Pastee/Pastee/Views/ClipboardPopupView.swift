@@ -332,7 +332,7 @@ struct NavButton: View {
             Text(title)
                 .font(.system(size: 13, weight: isSelected ? .bold : .regular))
                 .foregroundColor(isSelected ? Theme.textPrimary : Theme.textSecondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.vertical, 6)
         }
         .buttonStyle(.plain)

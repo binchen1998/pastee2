@@ -24,16 +24,21 @@ class FirstClickHostingView<Content: View>: NSHostingView<Content> {
 
 class PopupWindow: NSPanel {
     private var contentHostingView: FirstClickHostingView<ClipboardPopupView>?
+    private static let frameSaveKey = "PopupWindowFrame"
     
     // 允许成为key窗口以接收键盘事件，但不成为主窗口
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
     
     init() {
+        // 恢复保存的窗口大小
+        let savedFrame = Self.loadSavedFrame()
+        let initialRect = savedFrame ?? NSRect(x: 0, y: 0, width: 520, height: 500)
+        
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 520, height: 500),
-            // 无边框、无标题栏的浮动面板
-            styleMask: [.borderless, .nonactivatingPanel, .utilityWindow],
+            contentRect: initialRect,
+            // 无边框、无标题栏的浮动面板，支持调整大小
+            styleMask: [.borderless, .resizable, .nonactivatingPanel, .utilityWindow],
             backing: .buffered,
             defer: false
         )
@@ -45,6 +50,7 @@ class PopupWindow: NSPanel {
         self.isOpaque = false
         self.hasShadow = true
         self.minSize = NSSize(width: 380, height: 300)
+        self.maxSize = NSSize(width: 800, height: 900)
         
         // 关键：允许在非活动状态下接收鼠标事件
         self.acceptsMouseMovedEvents = true
@@ -56,8 +62,10 @@ class PopupWindow: NSPanel {
         // 设置集合行为：不占用空间，可在所有空间显示
         self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
         
-        // 设置位置到屏幕右下角
-        positionNearCorner()
+        // 如果没有保存的位置，设置到屏幕右下角
+        if savedFrame == nil {
+            positionNearCorner()
+        }
         
         let popupView = ClipboardPopupView { [weak self] in
             self?.hidePopup()
@@ -96,14 +104,38 @@ class PopupWindow: NSPanel {
         self.setFrameOrigin(NSPoint(x: x, y: y))
     }
     
+    // MARK: - 窗口大小保存/恢复
+    
+    private static func loadSavedFrame() -> NSRect? {
+        guard let dict = UserDefaults.standard.dictionary(forKey: frameSaveKey),
+              let x = dict["x"] as? CGFloat,
+              let y = dict["y"] as? CGFloat,
+              let width = dict["width"] as? CGFloat,
+              let height = dict["height"] as? CGFloat else {
+            return nil
+        }
+        return NSRect(x: x, y: y, width: width, height: height)
+    }
+    
+    private func saveFrame() {
+        let frame = self.frame
+        let dict: [String: CGFloat] = [
+            "x": frame.origin.x,
+            "y": frame.origin.y,
+            "width": frame.size.width,
+            "height": frame.size.height
+        ]
+        UserDefaults.standard.set(dict, forKey: Self.frameSaveKey)
+    }
+    
     func showPopup() {
-        positionNearCorner()
         // 关键：不使用 makeKeyAndOrderFront，不调用 NSApp.activate
         // 使用 orderFrontRegardless 显示窗口但不抢占焦点
         self.orderFrontRegardless()
     }
     
     func hidePopup() {
+        saveFrame()
         self.orderOut(nil)
     }
     
