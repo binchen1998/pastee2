@@ -319,8 +319,14 @@ struct SettingsView: View {
     }
     
     private func openHotkeySettings() {
-        // 使用 DispatchQueue 避免在 SwiftUI 更新中调用
-        DispatchQueue.main.async { [self] in
+        // 先关闭 Settings 窗口
+        NSApp.stopModal()
+        
+        // 使用 DispatchQueue 确保 Settings 窗口已关闭
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in
+            // 关闭当前窗口
+            NSApp.keyWindow?.close()
+            
             // 保存对 hotkey 窗口的引用
             var hotkeyWindow: NSPanel?
             
@@ -328,10 +334,18 @@ struct SettingsView: View {
                 currentHotkey: currentHotkey,
                 onSave: { newHotkey in
                     self.currentHotkey = newHotkey
+                    // Hotkey 关闭后重新打开 Settings
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        NotificationCenter.default.post(name: .showSettingsWindow, object: nil)
+                    }
                 },
                 onDismiss: {
                     NSApp.stopModal()
                     hotkeyWindow?.close()
+                    // Hotkey 关闭后重新打开 Settings
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        NotificationCenter.default.post(name: .showSettingsWindow, object: nil)
+                    }
                 }
             )
             
@@ -346,8 +360,7 @@ struct SettingsView: View {
             panel.backgroundColor = .clear
             panel.isOpaque = false
             panel.hasShadow = true
-            // 使用更高的层级确保显示在最前面
-            panel.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.maximumWindow)))
+            panel.level = .modalPanel
             panel.center()
             panel.isReleasedWhenClosed = false
             
@@ -358,9 +371,8 @@ struct SettingsView: View {
             
             hotkeyWindow = panel
             
-            // 先显示并激活
-            panel.orderFrontRegardless()
-            panel.makeKey()
+            // 显示并激活
+            panel.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             
             // 运行 modal
