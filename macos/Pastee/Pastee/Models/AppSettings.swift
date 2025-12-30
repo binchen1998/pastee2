@@ -48,10 +48,11 @@ struct RegisterResponse: Codable {
 struct UserInfo: Codable {
     let id: Int
     let email: String
-    let storageUsed: Int
-    let storageLimit: Int
-    let isVerified: Bool
-    let createdAt: String
+    let storageUsed: Int?
+    let storageLimit: Int?
+    let isVerified: Bool?
+    let isActive: Bool?
+    let createdAt: String?
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -59,6 +60,7 @@ struct UserInfo: Codable {
         case storageUsed = "storage_used"
         case storageLimit = "storage_limit"
         case isVerified = "is_verified"
+        case isActive = "is_active"
         case createdAt = "created_at"
     }
 }
