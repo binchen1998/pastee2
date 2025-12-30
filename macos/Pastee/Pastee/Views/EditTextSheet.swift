@@ -10,6 +10,7 @@ import AppKit
 
 struct EditTextSheet: View {
     @State private var text: String
+    @State private var shouldFocus = false
     let onSave: (String) -> Void
     let onCancel: () -> Void
     
@@ -26,17 +27,17 @@ struct EditTextSheet: View {
                 .foregroundColor(Theme.textSecondary)
                 .padding(.bottom, 10)
             
-            TextEditor(text: $text)
-                .font(.system(size: 14))
-                .foregroundColor(Theme.textPrimary)
-                .padding(10)
-                .background(Theme.surface)
-                .cornerRadius(8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Theme.accent.opacity(0.5), lineWidth: 2)
-                )
-                .frame(minHeight: 180, maxHeight: 300)
+            FocusableTextEditor(
+                text: $text,
+                shouldFocus: $shouldFocus
+            )
+            .frame(minHeight: 180, maxHeight: 300)
+            .background(Theme.surface)
+            .cornerRadius(8)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Theme.accent.opacity(0.5), lineWidth: 2)
+            )
             
             HStack {
                 Spacer()
@@ -63,6 +64,73 @@ struct EditTextSheet: View {
                 .stroke(Theme.accent.opacity(0.6), lineWidth: 2)
         )
         .shadow(color: .black.opacity(0.5), radius: 20)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                shouldFocus = true
+            }
+        }
+    }
+}
+
+// MARK: - FocusableTextEditor
+
+struct FocusableTextEditor: NSViewRepresentable {
+    @Binding var text: String
+    @Binding var shouldFocus: Bool
+    
+    func makeNSView(context: Context) -> NSScrollView {
+        let scrollView = NSTextView.scrollableTextView()
+        let textView = scrollView.documentView as! NSTextView
+        
+        textView.isRichText = false
+        textView.font = .systemFont(ofSize: 14)
+        textView.textColor = NSColor(Theme.textPrimary)
+        textView.backgroundColor = NSColor(Theme.surface)
+        textView.insertionPointColor = NSColor(Theme.textPrimary)
+        textView.delegate = context.coordinator
+        textView.textContainerInset = NSSize(width: 8, height: 8)
+        
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.borderType = .noBorder
+        scrollView.backgroundColor = NSColor(Theme.surface)
+        
+        return scrollView
+    }
+    
+    func updateNSView(_ nsView: NSScrollView, context: Context) {
+        let textView = nsView.documentView as! NSTextView
+        
+        if textView.string != text {
+            textView.string = text
+        }
+        
+        if shouldFocus {
+            DispatchQueue.main.async {
+                if let window = nsView.window {
+                    window.makeFirstResponder(textView)
+                }
+                shouldFocus = false
+            }
+        }
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, NSTextViewDelegate {
+        var parent: FocusableTextEditor
+        
+        init(_ parent: FocusableTextEditor) {
+            self.parent = parent
+        }
+        
+        func textDidChange(_ notification: Notification) {
+            if let textView = notification.object as? NSTextView {
+                parent.text = textView.string
+            }
+        }
     }
 }
 

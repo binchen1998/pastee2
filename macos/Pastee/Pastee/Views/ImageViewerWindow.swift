@@ -136,19 +136,24 @@ class ImageViewerWindowController: NSWindowController, NSWindowDelegate {
     init(data: Data, title: String) {
         let view = ImageViewerView(imageData: data, title: title)
         
-        let window = NSWindow(
+        // 使用 borderless 样式，与 Settings 窗口一致
+        let window = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
-            styleMask: [.titled, .closable, .resizable, .fullSizeContentView],
+            styleMask: [.borderless, .resizable, .utilityWindow],
             backing: .buffered,
             defer: false
         )
-        window.titlebarAppearsTransparent = true
-        window.titleVisibility = .hidden
         window.isMovableByWindowBackground = true
         window.backgroundColor = .clear
+        window.isOpaque = false
+        window.hasShadow = true
         window.level = .floating
         window.center()
-        window.contentView = NSHostingView(rootView: view)
+        
+        let hostingView = NSHostingView(rootView: view)
+        hostingView.wantsLayer = true
+        hostingView.layer?.backgroundColor = .clear
+        window.contentView = hostingView
         
         super.init(window: window)
         window.delegate = self
