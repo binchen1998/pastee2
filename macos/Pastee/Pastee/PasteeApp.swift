@@ -166,6 +166,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Window Management
     
     @objc func showPopup() {
+        // 未登录状态不显示主界面
+        guard authService.getToken() != nil else {
+            print("⚡️ [AppDelegate] showPopup - not logged in, showing login window")
+            showLoginWindow()
+            return
+        }
+        
         print("⚡️ [AppDelegate] showPopup - start")
         if popupWindow == nil {
             print("⚡️ [AppDelegate] showPopup - creating PopupWindow")
