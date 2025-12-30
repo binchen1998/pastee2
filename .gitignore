@@ -114,12 +114,95 @@ $RECYCLE.BIN/
 
 # Mac files
 .DS_Store
+.DS_Store?
+._*
 .AppleDouble
 .LSOverride
+.Spotlight-V100
+.Trashes
+Icon?
 
+# =========================
+# macOS / Xcode
+# =========================
+
+# Xcode build
+macos/Pastee/build/
+macos/Pastee/DerivedData/
+**/DerivedData/
+*.build/
+*.xcworkspace/xcuserdata/
+
+# Xcode user-specific
+*.xcuserstate
+*.xcuserdatad/
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+
+# Xcode workspaces
+*.xcworkspace
+!*.xcworkspace/contents.xcworkspacedata
+!*.xcworkspace/xcshareddata/
+
+# Playground
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+Package.resolved
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Carthage
+Carthage/Build/
+Carthage/Checkouts/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Code Injection
+iOSInjectionProject/
+
+# App packaging
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.app
+*.xcarchive
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Instruments
+*.instrumentsgui
+
+# Provisioning profiles
+*.mobileprovision
+*.provisionprofile
+
+# Crashlytics
+crashlytics.settings
+crashlytics-hierarchical.settings
+fabric.properties
+
+# =========================
 # Misc
+# =========================
 *.tmp
 *.temp
 *.bak
 *.swp
 *~
+
+# Cursor AI
+.cursorignore
