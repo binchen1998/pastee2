@@ -24,6 +24,7 @@ class MainViewModel: ObservableObject {
     @Published var draftCount = 0
     @Published var showToast = false
     @Published var toastMessage = "Copied"
+    @Published var scrollToTopTrigger = UUID()  // 用于触发滚动到顶部
     
     private var currentPage = 1
     private var hasMore = true
@@ -254,6 +255,9 @@ class MainViewModel: ObservableObject {
         currentPage = 1
         hasMore = true
         
+        // 触发滚动到顶部
+        scrollToTopTrigger = UUID()
+        
         await loadData()
         await loadCategories()
     }
@@ -267,6 +271,9 @@ class MainViewModel: ObservableObject {
         items = []
         currentPage = 1
         hasMore = true
+        
+        // 触发滚动到顶部
+        scrollToTopTrigger = UUID()
         
         // 更新分类选中状态
         for i in categories.indices {

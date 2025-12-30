@@ -188,11 +188,6 @@ struct ClipboardPopupView: View {
                     viewModel.selectCategory("bookmarked")
                 }
                 
-                NavButton(title: "Settings", isSelected: false) {
-                    // 使用 NotificationCenter 通知打开设置
-                    NotificationCenter.default.post(name: .showSettingsWindow, object: nil)
-                }
-                
                 if viewModel.draftCount > 0 {
                     HStack {
                         NavButton(title: "Drafts", isSelected: viewModel.selectedCategory == "drafts") {
@@ -371,6 +366,18 @@ CategoryRow(
                     .buttonStyle(.plain)
                 }
                 
+                // Settings Button
+                Button(action: {
+                    NotificationCenter.default.post(name: .showSettingsWindow, object: nil)
+                }) {
+                    Text("⚙")
+                        .font(.system(size: 22))
+                        .frame(width: 32, height: 32)
+                }
+                .buttonStyle(IconButtonStyle())
+                .help("Settings")
+                
+                // Search Button
                 Button(action: {
                     NotificationCenter.default.post(name: .showSearchWindow, object: nil)
                 }) {
@@ -404,41 +411,51 @@ CategoryRow(
             .padding(.bottom, 8)
             
             // 项目列表
-            ScrollView {
-                LazyVStack(spacing: 6) {
-                    ForEach(viewModel.filteredItems) { item in
-                        ClipboardCardView(
-                            item: item,
-                            onCopy: { viewModel.copyItem(item) },
-                            onDelete: {
-                                itemToDelete = item
-                                showDeleteItemConfirm = true
-                            },
-                            onEdit: {
-                                editingItem = item
-                            },
-                            onViewImage: {
-                                viewImageItem(item)
-                            },
-                            onToggleBookmark: {
-                                Task { await viewModel.toggleBookmark(item) }
-                            },
-                            onRetry: {
-                                Task { await viewModel.retryUpload(item) }
-                            }
-                        )
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 6) {
+                        // 顶部锚点
+                        Color.clear.frame(height: 0).id("top")
+                        
+                        ForEach(viewModel.filteredItems) { item in
+                            ClipboardCardView(
+                                item: item,
+                                onCopy: { viewModel.copyItem(item) },
+                                onDelete: {
+                                    itemToDelete = item
+                                    showDeleteItemConfirm = true
+                                },
+                                onEdit: {
+                                    editingItem = item
+                                },
+                                onViewImage: {
+                                    viewImageItem(item)
+                                },
+                                onToggleBookmark: {
+                                    Task { await viewModel.toggleBookmark(item) }
+                                },
+                                onRetry: {
+                                    Task { await viewModel.retryUpload(item) }
+                                }
+                            )
+                        }
+                        
+                        if viewModel.isLoading {
+                            Text(viewModel.loadingText)
+                                .font(.system(size: 14))
+                                .foregroundColor(Theme.textSecondary)
+                                .frame(maxWidth: .infinity)
+                                .padding(20)
+                        }
                     }
-                    
-                    if viewModel.isLoading {
-                        Text(viewModel.loadingText)
-                            .font(.system(size: 14))
-                            .foregroundColor(Theme.textSecondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(20)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 16)
+                }
+                .onChange(of: viewModel.scrollToTopTrigger) { _ in
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        proxy.scrollTo("top", anchor: .top)
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
             }
         }
         .background(Theme.background)
