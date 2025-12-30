@@ -74,6 +74,9 @@ struct ClipboardPopupView: View {
     private func showEditWindow(for item: ClipboardEntry) {
         guard item.contentType != "image" else { return }
         
+        // 捕获 viewModel 引用
+        let vm = viewModel
+        
         // 异步调用以避免在 SwiftUI 事务中运行模态
         DispatchQueue.main.async {
             // 创建模态窗口
@@ -95,8 +98,8 @@ struct ClipboardPopupView: View {
                 onSave: { [weak modalWindow] newContent in
                     NSApp.stopModal()
                     modalWindow?.close()
-                    Task {
-                        await self.viewModel.updateItemContent(item, newContent: newContent)
+                    Task { @MainActor in
+                        await vm.updateItemContent(item, newContent: newContent)
                     }
                 },
                 onCancel: { [weak modalWindow] in

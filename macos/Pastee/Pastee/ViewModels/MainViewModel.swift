@@ -306,18 +306,17 @@ class MainViewModel: ObservableObject {
         }
     }
     
+    @MainActor
     func updateItemContent(_ item: ClipboardEntry, newContent: String) async {
-        guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
-        
         do {
-            let updatedItem = try await APIService.shared.updateItemContent(id: item.id, content: newContent)
-            // 替换整个对象以触发 SwiftUI 更新
-            await MainActor.run {
+            _ = try await APIService.shared.updateItemContent(id: item.id, content: newContent)
+            // 在主线程上查找并更新
+            if let index = items.firstIndex(where: { $0.id == item.id }) {
                 var newItem = items[index]
                 newItem.content = newContent
                 items[index] = newItem
+                print("⚡️ [MainVM] Content updated: \(item.id)")
             }
-            print("⚡️ [MainVM] Content updated: \(item.id)")
         } catch {
             print("⚡️ [MainVM] Failed to update item: \(error)")
         }
