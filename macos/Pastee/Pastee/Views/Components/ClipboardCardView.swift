@@ -111,39 +111,7 @@ struct ClipboardCardView: View {
                     )
             }
             
-            // 左上角状态指示器
-            VStack(alignment: .leading, spacing: 4) {
-                // 上传中状态
-                if item.isUploading {
-                    HStack(spacing: 4) {
-                        ProgressView()
-                            .scaleEffect(0.6)
-                        Text("Uploading...")
-                            .font(.system(size: 10))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(Color.black.opacity(0.6))
-                    .cornerRadius(4)
-                }
-                
-                // 上传失败状态
-                if item.uploadFailed {
-                    HStack(spacing: 4) {
-                        Text("⚠️")
-                            .font(.system(size: 10))
-                        Text("Failed")
-                            .font(.system(size: 10))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(Color.red.opacity(0.8))
-                    .cornerRadius(4)
-                }
-            }
-            .padding(6)
+            // 状态指示器在卡片层级通过 statusIndicator 显示，这里不重复
             
             // 右上角缩略图标志
             if item.isThumbnail && !item.isUploading && !item.uploadFailed {
