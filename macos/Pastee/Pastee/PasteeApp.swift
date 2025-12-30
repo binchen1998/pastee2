@@ -202,70 +202,82 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc func showSettings() {
-        if settingsWindow == nil {
+        // 使用 DispatchQueue 避免在 transaction 中调用 modal
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
             let settingsView = SettingsView { [weak self] in
                 // 登出回调
+                NSApp.stopModal()
+                self?.settingsWindow?.close()
+                self?.settingsWindow = nil
                 self?.authService.logout()
                 self?.clipboardWatcher.stop()
                 self?.webSocketService.disconnect()
-                self?.settingsWindow?.close()
-                self?.settingsWindow = nil
                 self?.popupWindow?.close()
                 self?.popupWindow = nil
                 self?.showLoginWindow()
             }
             
-            settingsWindow = NSPanel(
+            let modalWindow = KeyablePanel(
                 contentRect: NSRect(x: 0, y: 0, width: 500, height: 650),
-                styleMask: [.borderless, .nonactivatingPanel, .utilityWindow],
+                styleMask: [.borderless, .utilityWindow],
                 backing: .buffered,
                 defer: false
             )
-            settingsWindow?.isMovableByWindowBackground = true
-            settingsWindow?.backgroundColor = .clear
-            settingsWindow?.isOpaque = false
-            settingsWindow?.hasShadow = true
-            settingsWindow?.level = .floating
-            settingsWindow?.center()
+            modalWindow.isMovableByWindowBackground = true
+            modalWindow.backgroundColor = .clear
+            modalWindow.isOpaque = false
+            modalWindow.hasShadow = true
+            modalWindow.level = .modalPanel
+            modalWindow.center()
+            
             let hostingView = NSHostingView(rootView: settingsView)
             hostingView.wantsLayer = true
             hostingView.layer?.backgroundColor = .clear
-            settingsWindow?.contentView = hostingView
+            modalWindow.contentView = hostingView
+            
+            self.settingsWindow = modalWindow
+            NSApp.runModal(for: modalWindow)
+            self.settingsWindow = nil
         }
-        
-        settingsWindow?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
     }
     
     @objc func showSearch() {
-        if searchWindow == nil {
+        // 使用 DispatchQueue 避免在 transaction 中调用 modal
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
             let searchView = SearchView { [weak self] item in
                 // 选择项目回调
-                self?.copyToClipboard(item)
+                NSApp.stopModal()
                 self?.searchWindow?.close()
+                self?.searchWindow = nil
+                self?.copyToClipboard(item)
             }
             
-            // 使用自定义 KeyablePanel 以支持键盘输入
-            searchWindow = KeyablePanel(
+            let modalWindow = KeyablePanel(
                 contentRect: NSRect(x: 0, y: 0, width: 480, height: 500),
                 styleMask: [.borderless, .utilityWindow],
                 backing: .buffered,
                 defer: false
             )
-            searchWindow?.isMovableByWindowBackground = true
-            searchWindow?.backgroundColor = .clear
-            searchWindow?.isOpaque = false
-            searchWindow?.hasShadow = true
-            searchWindow?.level = .floating
-            searchWindow?.center()
+            modalWindow.isMovableByWindowBackground = true
+            modalWindow.backgroundColor = .clear
+            modalWindow.isOpaque = false
+            modalWindow.hasShadow = true
+            modalWindow.level = .modalPanel
+            modalWindow.center()
+            
             let hostingView = NSHostingView(rootView: searchView)
             hostingView.wantsLayer = true
             hostingView.layer?.backgroundColor = .clear
-            searchWindow?.contentView = hostingView
+            modalWindow.contentView = hostingView
+            
+            self.searchWindow = modalWindow
+            NSApp.runModal(for: modalWindow)
+            self.searchWindow = nil
         }
-        
-        searchWindow?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
     }
     
     func copyToClipboard(_ item: ClipboardEntry) {

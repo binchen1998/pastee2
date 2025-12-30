@@ -17,6 +17,7 @@ struct SearchView: View {
     @State private var currentPage = 1
     @State private var hasMore = false
     @State private var shouldFocusSearchField = false
+    @ObservedObject private var themeManager = ThemeManager.shared
     
     let onSelect: (ClipboardEntry) -> Void
     
@@ -236,7 +237,8 @@ struct SearchView: View {
     }
     
     private func closeWindow() {
-        // 查找包含此视图的窗口并关闭
+        // 停止 modal 并关闭窗口
+        NSApp.stopModal()
         if let window = NSApp.windows.first(where: { $0.contentView is NSHostingView<SearchView> }) {
             window.close()
         } else {

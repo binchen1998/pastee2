@@ -15,6 +15,8 @@ struct SettingsView: View {
     @State private var autoStart = false
     @State private var hideAfterPaste = true
     @State private var showHotkeySettings = false
+    @State private var isDarkMode = true
+    @ObservedObject private var themeManager = ThemeManager.shared
     
     let onLogout: () -> Void
     
@@ -95,6 +97,18 @@ struct SettingsView: View {
                         )
                         .onChange(of: hideAfterPaste) { newValue in
                             saveSettings()
+                        }
+                        
+                        // Dark Mode
+                        settingToggleRow(
+                            icon: "🌙",
+                            iconColor: Color(hex: "#3498db"),
+                            title: "Dark Mode",
+                            subtitle: "Switch between dark and light theme",
+                            isOn: $isDarkMode
+                        )
+                        .onChange(of: isDarkMode) { newValue in
+                            themeManager.isDarkMode = newValue
                         }
                         
                         // Clear Cache
@@ -201,6 +215,7 @@ struct SettingsView: View {
         .sheet(isPresented: $showHotkeySettings) {
             HotkeySettingsView()
         }
+        .id(themeManager.isDarkMode) // 强制刷新视图以响应主题变化
     }
     
     // MARK: - Components
@@ -289,6 +304,7 @@ struct SettingsView: View {
         let settings = SettingsManager.shared.load()
         autoStart = settings.launchAtLogin
         hideAfterPaste = settings.hideAfterPaste
+        isDarkMode = themeManager.isDarkMode
         
         deviceId = AuthService.shared.getDeviceId()
         version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
@@ -324,7 +340,8 @@ struct SettingsView: View {
     }
     
     private func closeWindow() {
-        // 查找包含此视图的窗口并关闭
+        // 停止 modal 并关闭窗口
+        NSApp.stopModal()
         if let window = NSApp.windows.first(where: { $0.contentView is NSHostingView<SettingsView> }) {
             window.close()
         } else {

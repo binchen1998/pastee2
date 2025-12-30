@@ -10,9 +10,16 @@ import AppKit
 
 struct ClipboardPopupView: View {
     @StateObject private var viewModel = MainViewModel()
+    @ObservedObject private var themeManager = ThemeManager.shared
     @State private var showCategoryInput = false
     @State private var newCategoryName = ""
     @State private var editingItem: ClipboardEntry?
+    
+    // 删除确认
+    @State private var showDeleteItemConfirm = false
+    @State private var itemToDelete: ClipboardEntry?
+    @State private var showDeleteCategoryConfirm = false
+    @State private var categoryToDelete: Category?
     
     let onClose: () -> Void
     
@@ -38,6 +45,7 @@ struct ClipboardPopupView: View {
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(Theme.border, lineWidth: 1)
             )
+            .id(themeManager.isDarkMode) // 强制刷新视图以响应主题变化
             
             // Toast
             if viewModel.showToast {
@@ -234,14 +242,15 @@ struct ClipboardPopupView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 2) {
                     ForEach(viewModel.categories) { category in
-                        CategoryRow(
-                            category: category,
-                            isSelected: category.name == viewModel.selectedCategory,
-                            onSelect: { viewModel.selectCategory(category.name) },
-                            onDelete: {
-                                Task { await viewModel.deleteCategory(category) }
-                            }
-                        )
+CategoryRow(
+                                            category: category,
+                                            isSelected: category.name == viewModel.selectedCategory,
+                                            onSelect: { viewModel.selectCategory(category.name) },
+                                            onDelete: {
+                                                categoryToDelete = category
+                                                showDeleteCategoryConfirm = true
+                                            }
+                                        )
                     }
                 }
                 .padding(.horizontal, 12)
@@ -288,6 +297,44 @@ struct ClipboardPopupView: View {
                         await viewModel.createCategory(name: newCategoryName)
                         newCategoryName = ""
                     }
+                }
+            }
+        }
+        // 删除 Category 确认
+        .alert("Delete Category", isPresented: $showDeleteCategoryConfirm) {
+            Button("Cancel", role: .cancel) {
+                categoryToDelete = nil
+            }
+            Button("Delete", role: .destructive) {
+                if let category = categoryToDelete {
+                    Task {
+                        await viewModel.deleteCategory(category)
+                        categoryToDelete = nil
+                    }
+                }
+            }
+        } message: {
+            Text("Are you sure you want to delete \"\(categoryToDelete?.name ?? "")\"? This action cannot be undone.")
+        }
+        // 删除 Item 确认
+        .alert("Delete Item", isPresented: $showDeleteItemConfirm) {
+            Button("Cancel", role: .cancel) {
+                itemToDelete = nil
+            }
+            Button("Delete", role: .destructive) {
+                if let item = itemToDelete {
+                    Task {
+                        await viewModel.deleteItem(item)
+                        itemToDelete = nil
+                    }
+                }
+            }
+        } message: {
+            if let item = itemToDelete {
+                if item.contentType == "image" {
+                    Text("Are you sure you want to delete this image? This action cannot be undone.")
+                } else {
+                    Text("Are you sure you want to delete this item? This action cannot be undone.")
                 }
             }
         }
@@ -357,7 +404,8 @@ struct ClipboardPopupView: View {
                             item: item,
                             onCopy: { viewModel.copyItem(item) },
                             onDelete: {
-                                Task { await viewModel.deleteItem(item) }
+                                itemToDelete = item
+                                showDeleteItemConfirm = true
                             },
                             onEdit: {
                                 editingItem = item
