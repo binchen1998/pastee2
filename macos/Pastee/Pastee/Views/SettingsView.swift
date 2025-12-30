@@ -14,9 +14,13 @@ struct SettingsView: View {
     @State private var version = "1.0.0"
     @State private var autoStart = false
     @State private var hideAfterPaste = true
-    @State private var showHotkeySettings = false
+    @State private var currentHotkey = "Command + Shift + V"
     @State private var isDarkMode = true
     @ObservedObject private var themeManager = ThemeManager.shared
+    
+    private var currentHotkeyDescription: String {
+        "Current: \(currentHotkey)"
+    }
     
     let onLogout: () -> Void
     
@@ -70,8 +74,8 @@ struct SettingsView: View {
                             icon: "⌨",
                             iconColor: Color(hex: "#2ecc71"),
                             title: "Shortcut Settings",
-                            subtitle: "Configure global keyboard shortcuts",
-                            action: { showHotkeySettings = true }
+                            subtitle: currentHotkeyDescription,
+                            action: { openHotkeySettings() }
                         )
                         
                         // Launch on Start
@@ -212,9 +216,6 @@ struct SettingsView: View {
         .onAppear {
             loadSettings()
         }
-        .sheet(isPresented: $showHotkeySettings) {
-            HotkeySettingsView()
-        }
         .id(themeManager.isDarkMode) // 强制刷新视图以响应主题变化
     }
     
@@ -304,6 +305,7 @@ struct SettingsView: View {
         let settings = SettingsManager.shared.load()
         autoStart = settings.launchAtLogin
         hideAfterPaste = settings.hideAfterPaste
+        currentHotkey = settings.hotkey
         isDarkMode = themeManager.isDarkMode
         
         deviceId = AuthService.shared.getDeviceId()
@@ -314,6 +316,39 @@ struct SettingsView: View {
             email = savedEmail
             print("⚡️ [Settings] Using saved email: \(savedEmail)")
         }
+    }
+    
+    private func openHotkeySettings() {
+        let hotkeyView = HotkeySettingsView(
+            currentHotkey: currentHotkey,
+            onSave: { newHotkey in
+                currentHotkey = newHotkey
+            },
+            onDismiss: {
+                NSApp.keyWindow?.close()
+            }
+        )
+        
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 280),
+            styleMask: [.borderless, .utilityWindow],
+            backing: .buffered,
+            defer: false
+        )
+        panel.isMovableByWindowBackground = true
+        panel.backgroundColor = .clear
+        panel.isOpaque = false
+        panel.hasShadow = true
+        panel.level = .floating
+        panel.center()
+        panel.isReleasedWhenClosed = false
+        
+        let hostingView = NSHostingView(rootView: hotkeyView)
+        hostingView.wantsLayer = true
+        hostingView.layer?.backgroundColor = .clear
+        panel.contentView = hostingView
+        
+        panel.makeKeyAndOrderFront(nil)
     }
     
     private func saveSettings() {

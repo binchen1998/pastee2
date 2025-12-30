@@ -144,10 +144,10 @@ class HotkeyService {
     
     static let presets: [String] = [
         "Command + Shift + V",
-        "Ctrl + Shift + V",
-        "Ctrl + Shift + C",
-        "Ctrl + Alt + V",
-        "Ctrl + Alt + C"
+        "Command + Shift + C",
+        "Command + Option + V",
+        "Control + Shift + V",
+        "Control + Option + V"
     ]
 }
 
