@@ -42,6 +42,17 @@ namespace Pastee.App.Views
             
             // 监听分类变化以显示/隐藏清空按钮
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+            
+            // 监听滚动到顶部请求
+            _viewModel.ScrollToTopRequested += OnScrollToTopRequested;
+        }
+
+        private void OnScrollToTopRequested(object? sender, EventArgs e)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                ItemsScrollViewer.ScrollToTop();
+            }));
         }
 
         private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)

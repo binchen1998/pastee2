@@ -476,7 +476,7 @@
                 </StackPanel>
 
                 <!-- List -->
-                <ScrollViewer VerticalScrollBarVisibility="Auto" ScrollChanged="OnScrollChanged" Margin="0,40,0,0">
+                <ScrollViewer x:Name="ItemsScrollViewer" VerticalScrollBarVisibility="Auto" ScrollChanged="OnScrollChanged" Margin="0,40,0,0">
                     <StackPanel>
                         <ItemsControl ItemsSource="{Binding FilteredItems}" ItemTemplate="{StaticResource ClipboardCardTemplate}">
                             <ItemsControl.ItemsPanel>

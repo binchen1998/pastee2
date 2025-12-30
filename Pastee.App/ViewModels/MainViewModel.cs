@@ -21,6 +21,11 @@ namespace Pastee.App.ViewModels
         private readonly RemoteSyncService _remoteSync;
         private readonly ApiService _apiService = new ApiService();
         private readonly WebSocketService _wsService = new WebSocketService();
+
+        /// <summary>
+        /// 当需要滚动到顶部时触发
+        /// </summary>
+        public event EventHandler? ScrollToTopRequested;
         
         private string _searchInput = string.Empty;
         private string _searchText = string.Empty;
@@ -202,7 +207,11 @@ namespace Pastee.App.ViewModels
 
             ReconnectCommand = new RelayCommand(async _ => await InitializeRealtimeAsync(true));
             LoadMoreCommand = new RelayCommand(async _ => await FetchItemsAsync(_currentPage + 1), _ => !IsLoading && _hasMore);
-            RefreshCommand = new RelayCommand(async _ => await FetchItemsAsync(1));
+            RefreshCommand = new RelayCommand(async _ => 
+            {
+                ScrollToTopRequested?.Invoke(this, EventArgs.Empty);
+                await FetchItemsAsync(1);
+            });
             RefreshCategoriesCommand = new RelayCommand(async _ => await FetchCategoriesAsync());
             CopyItemCommand = new RelayCommand(p =>
             {
@@ -218,6 +227,9 @@ namespace Pastee.App.ViewModels
                 var catName = p as string;
                 if (!string.IsNullOrEmpty(catName))
                 {
+                    // 滚动到顶部
+                    ScrollToTopRequested?.Invoke(this, EventArgs.Empty);
+                    
                     // 1. 立即清空列表，确保视觉反馈即时
                     Items.Clear();
                     
