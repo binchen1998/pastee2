@@ -13,7 +13,6 @@ struct ClipboardPopupView: View {
     @State private var showCategoryInput = false
     @State private var newCategoryName = ""
     @State private var editingItem: ClipboardEntry?
-    @State private var showEditSheet = false
     
     let onClose: () -> Void
     
@@ -62,21 +61,61 @@ struct ClipboardPopupView: View {
                 await viewModel.loadData()
             }
         }
-        .sheet(isPresented: $showEditSheet) {
-            if let item = editingItem {
-                EditTextSheet(
-                    content: item.content ?? "",
-                    onSave: { newContent in
-                        Task {
-                            await viewModel.updateItemContent(item, newContent: newContent)
-                        }
-                        showEditSheet = false
-                    },
-                    onCancel: {
-                        showEditSheet = false
-                    }
-                )
+        .onChange(of: editingItem) { newValue in
+            if let item = newValue {
+                showEditWindow(for: item)
+                editingItem = nil
             }
+        }
+    }
+    
+    // MARK: - Helper Functions
+    
+    private func showEditWindow(for item: ClipboardEntry) {
+        guard item.contentType != "image" else { return }
+        
+        let editView = EditTextSheet(
+            content: item.content ?? "",
+            onSave: { newContent in
+                Task {
+                    await viewModel.updateItemContent(item, newContent: newContent)
+                }
+                NSApp.keyWindow?.close()
+            },
+            onCancel: {
+                NSApp.keyWindow?.close()
+            }
+        )
+        
+        let window = KeyablePanel(
+            contentRect: NSRect(x: 0, y: 0, width: 480, height: 350),
+            styleMask: [.borderless, .utilityWindow],
+            backing: .buffered,
+            defer: false
+        )
+        window.isMovableByWindowBackground = true
+        window.backgroundColor = .clear
+        window.isOpaque = false
+        window.hasShadow = true
+        window.level = .floating
+        window.center()
+        
+        let hostingView = NSHostingView(rootView: editView)
+        hostingView.wantsLayer = true
+        hostingView.layer?.backgroundColor = .clear
+        window.contentView = hostingView
+        
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+    
+    private func viewImageItem(_ item: ClipboardEntry) {
+        guard item.contentType == "image" else { return }
+        
+        // 获取图片数据
+        if let base64 = item.displayImageData ?? item.content,
+           let data = Data(base64Encoded: base64) {
+            showImageViewer(data: data, title: "Image Viewer")
         }
     }
     
@@ -290,7 +329,9 @@ struct ClipboardPopupView: View {
                             },
                             onEdit: {
                                 editingItem = item
-                                showEditSheet = true
+                            },
+                            onViewImage: {
+                                viewImageItem(item)
                             },
                             onToggleBookmark: {
                                 Task { await viewModel.toggleBookmark(item) }

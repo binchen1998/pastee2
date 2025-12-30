@@ -13,6 +13,7 @@ struct ClipboardCardView: View {
     let onCopy: () -> Void
     let onDelete: () -> Void
     let onEdit: () -> Void
+    let onViewImage: () -> Void
     let onToggleBookmark: () -> Void
     let onRetry: () -> Void
     
@@ -233,14 +234,13 @@ struct ClipboardCardView: View {
                 .buttonStyle(.plain)
                 .help("Edit")
             } else {
-                Button(action: {
-                    // View image
-                }) {
+                Button(action: onViewImage) {
                     Text("👁")
                         .font(.system(size: 14))
                         .foregroundColor(Theme.textSecondary)
                 }
                 .buttonStyle(.plain)
+                .help("View Image")
                 .help("View Image")
             }
             
@@ -272,6 +272,7 @@ struct ClipboardCardView: View {
             onCopy: {},
             onDelete: {},
             onEdit: {},
+            onViewImage: {},
             onToggleBookmark: {},
             onRetry: {}
         )
@@ -281,6 +282,7 @@ struct ClipboardCardView: View {
             onCopy: {},
             onDelete: {},
             onEdit: {},
+            onViewImage: {},
             onToggleBookmark: {},
             onRetry: {}
         )
