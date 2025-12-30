@@ -193,15 +193,12 @@ class APIService {
         }
     }
     
-    func updateItem(id: String, content: String? = nil, isBookmarked: Bool? = nil) async throws -> ClipboardEntry {
-        let url = URL(string: "\(baseURL)/clipboard/items/\(id)")!
+    func updateItemContent(id: String, content: String) async throws -> ClipboardEntry {
+        let url = URL(string: "\(baseURL)/clipboard/items/\(id)/content")!
         var request = createRequest(url: url, method: "PATCH")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        var body: [String: Any] = [:]
-        if let content = content { body["content"] = content }
-        if let isBookmarked = isBookmarked { body["is_bookmarked"] = isBookmarked }
-        
+        let body: [String: Any] = ["content": content]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         
         let (data, response) = try await session.data(for: request)
@@ -211,6 +208,21 @@ class APIService {
         }
         
         return try JSONDecoder().decode(ClipboardEntry.self, from: data)
+    }
+    
+    func toggleBookmark(id: String, isBookmarked: Bool) async throws {
+        let url = URL(string: "\(baseURL)/clipboard/items/\(id)/bookmark")!
+        var request = createRequest(url: url, method: "PATCH")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let body: [String: Any] = ["is_bookmarked": isBookmarked]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        
+        let (_, response) = try await session.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw APIError.unknown((response as? HTTPURLResponse)?.statusCode ?? -1)
+        }
     }
     
     func getOriginalImage(id: String) async throws -> String? {

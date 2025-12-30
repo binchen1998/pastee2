@@ -291,11 +291,12 @@ class MainViewModel: ObservableObject {
         items[index].isBookmarked = newValue
         
         do {
-            _ = try await APIService.shared.updateItem(id: item.id, isBookmarked: newValue)
+            try await APIService.shared.toggleBookmark(id: item.id, isBookmarked: newValue)
+            print("⚡️ [MainVM] Bookmark toggled: \(item.id) -> \(newValue)")
         } catch {
             // 恢复状态
             items[index].isBookmarked = !newValue
-            print("Failed to toggle bookmark: \(error)")
+            print("⚡️ [MainVM] Toggle bookmark failed: \(error)")
         }
     }
     
@@ -303,10 +304,11 @@ class MainViewModel: ObservableObject {
         guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
         
         do {
-            _ = try await APIService.shared.updateItem(id: item.id, content: newContent)
+            _ = try await APIService.shared.updateItemContent(id: item.id, content: newContent)
             items[index].content = newContent
+            print("⚡️ [MainVM] Content updated: \(item.id)")
         } catch {
-            print("Failed to update item: \(error)")
+            print("⚡️ [MainVM] Failed to update item: \(error)")
         }
     }
     
