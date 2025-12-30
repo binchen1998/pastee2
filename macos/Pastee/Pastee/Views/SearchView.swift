@@ -55,7 +55,11 @@ struct SearchView: View {
                         placeholder: "Type and press Enter to search...",
                         shouldFocus: $shouldFocusSearchField,
                         onSubmit: {
-                            Task { await search() }
+                            print("⚡️ [SearchView] onSubmit closure called")
+                            Task { 
+                                print("⚡️ [SearchView] onSubmit Task started")
+                                await search() 
+                            }
                         }
                     )
                     .frame(height: 20)
@@ -169,14 +173,20 @@ struct SearchView: View {
     // MARK: - Actions
     
     private func search() async {
-        guard !searchText.isEmpty else { return }
+        print("⚡️ [SearchView] search() called, searchText: '\(searchText)'")
+        guard !searchText.isEmpty else { 
+            print("⚡️ [SearchView] search() - searchText is empty, returning")
+            return 
+        }
         
         isSearching = true
         hasSearched = true
         currentPage = 1
         
         do {
+            print("⚡️ [SearchView] search() - calling API...")
             let response = try await APIService.shared.searchItems(query: searchText, page: 1)
+            print("⚡️ [SearchView] search() - got \(response.items.count) results")
             var items = response.items
             for i in items.indices {
                 items[i].initializeImageState()
@@ -184,6 +194,7 @@ struct SearchView: View {
             results = items
             hasMore = response.hasMoreItems
         } catch {
+            print("⚡️ [SearchView] search() - error: \(error)")
             results = []
         }
         
@@ -396,7 +407,9 @@ struct FocusableTextField: NSViewRepresentable {
         }
         
         func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+            print("⚡️ [FocusableTextField] doCommandBy: \(commandSelector)")
             if commandSelector == #selector(NSResponder.insertNewline(_:)) {
+                print("⚡️ [FocusableTextField] Enter key pressed, calling onSubmit")
                 parent.onSubmit()
                 return true
             }
