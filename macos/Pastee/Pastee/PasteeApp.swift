@@ -283,49 +283,44 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc func showSearch() {
-        // 使用 DispatchQueue 避免在 transaction 中调用 modal
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
-            let searchView = SearchView { [weak self] item in
-                // 选择项目回调
-                NSApp.stopModal()
-                self?.searchWindow?.close()
-                self?.searchWindow = nil
-                self?.copyToClipboard(item)
-            }
-            
-            let modalWindow = KeyablePanel(
-                contentRect: NSRect(x: 0, y: 0, width: 480, height: 500),
-                styleMask: [.borderless, .utilityWindow],
-                backing: .buffered,
-                defer: false
-            )
-            modalWindow.isMovableByWindowBackground = true
-            modalWindow.backgroundColor = .clear
-            modalWindow.isOpaque = false
-            modalWindow.hasShadow = true
-            modalWindow.level = .modalPanel
-            modalWindow.center()
-            
-            // 确保窗口可以接收键盘事件
-            modalWindow.isReleasedWhenClosed = false
-            
-            let hostingView = NSHostingView(rootView: searchView)
-            hostingView.wantsLayer = true
-            hostingView.layer?.backgroundColor = .clear
-            modalWindow.contentView = hostingView
-            
-            self.searchWindow = modalWindow
-            
-            // 先显示窗口并激活
-            modalWindow.makeKeyAndOrderFront(nil)
+        // 如果已经有搜索窗口，直接激活它
+        if let existingWindow = searchWindow {
+            existingWindow.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
-            
-            // 运行 modal
-            NSApp.runModal(for: modalWindow)
-            self.searchWindow = nil
+            return
         }
+        
+        let searchView = SearchView { [weak self] item in
+            // 选择项目回调
+            self?.searchWindow?.close()
+            self?.searchWindow = nil
+            self?.copyToClipboard(item)
+        }
+        
+        let panel = KeyablePanel(
+            contentRect: NSRect(x: 0, y: 0, width: 480, height: 500),
+            styleMask: [.borderless, .utilityWindow],
+            backing: .buffered,
+            defer: false
+        )
+        panel.isMovableByWindowBackground = true
+        panel.backgroundColor = .clear
+        panel.isOpaque = false
+        panel.hasShadow = true
+        panel.level = .floating
+        panel.center()
+        panel.isReleasedWhenClosed = false
+        
+        let hostingView = NSHostingView(rootView: searchView)
+        hostingView.wantsLayer = true
+        hostingView.layer?.backgroundColor = .clear
+        panel.contentView = hostingView
+        
+        self.searchWindow = panel
+        
+        // 显示窗口并激活
+        panel.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
     
     func copyToClipboard(_ item: ClipboardEntry) {

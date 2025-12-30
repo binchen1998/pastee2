@@ -248,12 +248,9 @@ struct SearchView: View {
     }
     
     private func closeWindow() {
-        // 停止 modal 并关闭窗口
-        NSApp.stopModal()
-        if let window = NSApp.windows.first(where: { $0.contentView is NSHostingView<SearchView> }) {
+        // 关闭窗口
+        if let window = NSApp.keyWindow {
             window.close()
-        } else {
-            NSApp.keyWindow?.close()
         }
     }
 }
