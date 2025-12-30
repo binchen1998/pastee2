@@ -232,8 +232,7 @@ class AuthService {
     // MARK: - Google OAuth
     
     func startGoogleOAuth() {
-        // 使用 pastee-macos scheme 避免与 Electron 版本冲突
-        let redirectUri = "pastee-macos://oauth/callback"
+        let redirectUri = "pastee://oauth/callback"
         let url = URL(string: "\(baseURL)/auth/oauth/google/authorize?redirect_uri=\(redirectUri)")!
         NSWorkspace.shared.open(url)
     }

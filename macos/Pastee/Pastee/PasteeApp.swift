@@ -438,7 +438,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func handleURL(_ event: NSAppleEventDescriptor, withReplyEvent replyEvent: NSAppleEventDescriptor) {
         guard let urlString = event.paramDescriptor(forKeyword: AEKeyword(keyDirectObject))?.stringValue,
               let url = URL(string: urlString),
-              (url.scheme == "pastee" || url.scheme == "pastee-macos"),
+              url.scheme == "pastee",
               url.host == "oauth",
               url.path == "/callback",
               let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
