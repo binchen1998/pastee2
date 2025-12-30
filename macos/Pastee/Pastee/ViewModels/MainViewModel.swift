@@ -115,6 +115,9 @@ class MainViewModel: ObservableObject {
         
         isLoading = true
         loadingText = "Loading..."
+        
+        // 立即清空列表，避免显示旧数据
+        items = []
         currentPage = 1
         hasMore = true
         
@@ -225,7 +228,14 @@ class MainViewModel: ObservableObject {
     }
     
     func refresh() async {
+        // 立即清空列表和分类，避免显示旧数据
+        items = []
+        categories = []
+        currentPage = 1
+        hasMore = true
+        
         await loadData()
+        await loadCategories()
     }
     
     // MARK: - Category Actions
