@@ -309,7 +309,7 @@ class MainViewModel: ObservableObject {
     @MainActor
     func updateItemContent(_ item: ClipboardEntry, newContent: String) async {
         do {
-            _ = try await APIService.shared.updateItemContent(id: item.id, content: newContent)
+            try await APIService.shared.updateItemContent(id: item.id, content: newContent)
             // 在主线程上查找并更新
             if let index = items.firstIndex(where: { $0.id == item.id }) {
                 var newItem = items[index]
@@ -405,11 +405,13 @@ class MainViewModel: ObservableObject {
                     }
                 }
             }
-        case .updateItem(var updatedItem):
+        case .updateItem(let updatedItem):
+            // WebSocket update_item 只包含部分字段 (id, content)，只更新 content
             if let index = items.firstIndex(where: { $0.id == updatedItem.id }) {
-                updatedItem.initializeImageState()
-                items[index] = updatedItem
-                print("[WebSocket] Item updated: \(updatedItem.id)")
+                var existingItem = items[index]
+                existingItem.content = updatedItem.content
+                items[index] = existingItem
+                print("[WebSocket] Item content updated: \(updatedItem.id)")
             }
         case .deleteItem(let itemId):
             items.removeAll { $0.id == itemId }

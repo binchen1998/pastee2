@@ -129,24 +129,47 @@ struct ImageViewerView: View {
     }
 }
 
+// 图片查看器窗口管理器
+class ImageViewerWindowController: NSWindowController, NSWindowDelegate {
+    static var activeWindows: [ImageViewerWindowController] = []
+    
+    init(data: Data, title: String) {
+        let view = ImageViewerView(imageData: data, title: title)
+        
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
+            styleMask: [.titled, .closable, .resizable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.isMovableByWindowBackground = true
+        window.backgroundColor = .clear
+        window.level = .floating
+        window.center()
+        window.contentView = NSHostingView(rootView: view)
+        
+        super.init(window: window)
+        window.delegate = self
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    func windowWillClose(_ notification: Notification) {
+        // 从活动窗口列表中移除
+        ImageViewerWindowController.activeWindows.removeAll { $0 === self }
+    }
+}
+
 // 创建图片查看器窗口
 func showImageViewer(data: Data, title: String = "Image Viewer") {
-    let view = ImageViewerView(imageData: data, title: title)
-    
-    let window = NSWindow(
-        contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
-        styleMask: [.titled, .closable, .resizable, .fullSizeContentView],
-        backing: .buffered,
-        defer: false
-    )
-    window.titlebarAppearsTransparent = true
-    window.titleVisibility = .hidden
-    window.isMovableByWindowBackground = true
-    window.backgroundColor = .clear
-    window.level = .floating
-    window.center()
-    window.contentView = NSHostingView(rootView: view)
-    window.makeKeyAndOrderFront(nil)
+    let controller = ImageViewerWindowController(data: data, title: title)
+    // 保持强引用
+    ImageViewerWindowController.activeWindows.append(controller)
+    controller.showWindow(nil)
 }
 
 // MARK: - Preview

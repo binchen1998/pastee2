@@ -193,7 +193,7 @@ class APIService {
         }
     }
     
-    func updateItemContent(id: String, content: String) async throws -> ClipboardEntry {
+    func updateItemContent(id: String, content: String) async throws {
         let url = URL(string: "\(baseURL)/clipboard/items/\(id)/content")!
         var request = createRequest(url: url, method: "PATCH")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -207,7 +207,10 @@ class APIService {
             throw APIError.unknown((response as? HTTPURLResponse)?.statusCode ?? -1)
         }
         
-        return try JSONDecoder().decode(ClipboardEntry.self, from: data)
+        // API 只返回部分字段，不需要解码完整的 ClipboardEntry
+        if let jsonString = String(data: data, encoding: .utf8) {
+            print("⚡️ [API] updateItemContent response: \(jsonString)")
+        }
     }
     
     func toggleBookmark(id: String, isBookmarked: Bool) async throws {

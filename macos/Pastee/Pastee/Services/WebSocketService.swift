@@ -131,10 +131,21 @@ class WebSocketService: NSObject, URLSessionWebSocketDelegate {
                 return .newItem(item)
             }
         case "update_item", "item_updated":
-            if let itemData = eventData as? [String: Any],
-               let itemJson = try? JSONSerialization.data(withJSONObject: itemData),
-               let item = try? JSONDecoder().decode(ClipboardEntry.self, from: itemJson) {
-                return .updateItem(item)
+            // update_item 只包含部分字段: id, content, updated_at
+            if let itemData = eventData as? [String: Any] {
+                var itemId: String?
+                if let id = itemData["id"] as? Int {
+                    itemId = String(id)
+                } else if let id = itemData["id"] as? String {
+                    itemId = id
+                }
+                
+                if let id = itemId, let content = itemData["content"] as? String {
+                    // 创建一个只包含更新信息的部分 Entry
+                    var partialItem = ClipboardEntry(content: content)
+                    partialItem.id = id
+                    return .updateItem(partialItem)
+                }
             }
         case "delete_item", "item_deleted":
             if let itemId = eventData as? String {
