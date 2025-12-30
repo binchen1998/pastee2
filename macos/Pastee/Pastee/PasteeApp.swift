@@ -107,6 +107,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func startApp() {
+        // 检查辅助功能权限
+        checkAccessibilityPermission()
+        
         // 启动剪贴板监控
         clipboardWatcher.start()
         
@@ -269,6 +272,60 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func quit() {
         NSApp.terminate(nil)
+    }
+    
+    // MARK: - Accessibility Permission
+    
+    private func checkAccessibilityPermission() {
+        let trusted = AXIsProcessTrusted()
+        
+        if !trusted {
+            // 显示友好的权限请求对话框
+            showAccessibilityPermissionDialog()
+        }
+    }
+    
+    private func showAccessibilityPermissionDialog() {
+        let alert = NSAlert()
+        alert.messageText = "需要辅助功能权限"
+        alert.informativeText = """
+        Pastee 需要辅助功能权限才能实现以下功能：
+        
+        • 点击剪贴板项目后自动粘贴
+        • 全局快捷键 (⌘⇧V)
+        
+        请在系统设置中启用 Pastee 的辅助功能权限。
+        """
+        alert.alertStyle = .warning
+        alert.icon = NSImage(systemSymbolName: "hand.raised.circle.fill", accessibilityDescription: "Permission")
+        
+        alert.addButton(withTitle: "打开系统设置")
+        alert.addButton(withTitle: "稍后再说")
+        
+        let response = alert.runModal()
+        
+        if response == .alertFirstButtonReturn {
+            // 打开系统设置的辅助功能页面
+            openAccessibilitySettings()
+        }
+    }
+    
+    private func openAccessibilitySettings() {
+        // macOS 13+ 使用新的 URL scheme
+        if #available(macOS 13.0, *) {
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                NSWorkspace.shared.open(url)
+            }
+        } else {
+            // macOS 12 及更早版本
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                NSWorkspace.shared.open(url)
+            }
+        }
+        
+        // 同时触发系统的权限请求对话框（会高亮显示应用）
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+        AXIsProcessTrustedWithOptions(options as CFDictionary)
     }
     
     // MARK: - URL Scheme Handler
