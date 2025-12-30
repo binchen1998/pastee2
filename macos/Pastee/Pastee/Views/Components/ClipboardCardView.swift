@@ -54,6 +54,9 @@ struct ClipboardCardView: View {
                 .offset(x: 5, y: -5)
                 .opacity(isHovering ? 1 : 0)
         }
+        .overlay(alignment: .bottomTrailing) {
+            downloadingIndicator
+        }
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovering = hovering
@@ -246,6 +249,26 @@ struct ClipboardCardView: View {
                 .foregroundColor(item.isBookmarked ? Theme.delete : Theme.textSecondary)
         }
         .buttonStyle(.plain)
+    }
+    
+    // MARK: - Downloading Indicator
+    
+    @ViewBuilder
+    private var downloadingIndicator: some View {
+        if item.isDownloadingOriginal {
+            HStack(spacing: 4) {
+                ProgressView()
+                    .scaleEffect(0.5)
+                Text("Downloading...")
+                    .font(.system(size: 9))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(Color.black.opacity(0.6))
+            .cornerRadius(4)
+            .padding(6)
+        }
     }
     
     // MARK: - Action Buttons

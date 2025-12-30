@@ -165,26 +165,46 @@ class MainViewModel: ObservableObject {
             return
         }
         
-        // 2. 随机延迟 300-2000ms，避免同时发起大量请求
+        // 检查是否已经在下载
+        if let index = items.firstIndex(where: { $0.id == item.id }), items[index].isDownloadingOriginal {
+            return
+        }
+        
+        // 2. 标记为下载中
+        if let index = items.firstIndex(where: { $0.id == item.id }) {
+            items[index].isDownloadingOriginal = true
+        }
+        
+        // 3. 随机延迟 300-2000ms，避免同时发起大量请求
         let delay = UInt64.random(in: 300_000_000...2_000_000_000)
         try? await Task.sleep(nanoseconds: delay)
         
         do {
-            // 3. 从服务器下载原图
+            // 4. 从服务器下载原图
             print("[MainVM] 正在从服务器下载原图: \(item.id)")
             if let base64String = try await APIService.shared.getOriginalImage(id: item.id) {
-                // 4. 保存到本地缓存
+                // 5. 保存到本地缓存
                 ImageCacheService.shared.saveOriginalImage(id: item.id, base64Data: base64String)
                 
-                // 5. 更新对应项目的图片数据
+                // 6. 更新对应项目的图片数据
                 if let index = items.firstIndex(where: { $0.id == item.id }) {
                     items[index].displayImageData = base64String
                     items[index].isThumbnail = false
+                    items[index].isDownloadingOriginal = false
                     print("[MainVM] 原图下载并缓存成功: \(item.id)")
+                }
+            } else {
+                // 下载失败，清除下载状态
+                if let index = items.firstIndex(where: { $0.id == item.id }) {
+                    items[index].isDownloadingOriginal = false
                 }
             }
         } catch {
             print("[MainVM] 原图下载失败: \(error)")
+            // 下载失败，清除下载状态
+            if let index = items.firstIndex(where: { $0.id == item.id }) {
+                items[index].isDownloadingOriginal = false
+            }
         }
     }
     

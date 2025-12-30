@@ -21,7 +21,8 @@ struct ClipboardEntry: Codable, Identifiable, Equatable {
     // 本地状态 (不序列化)
     var isUploading: Bool = false
     var uploadFailed: Bool = false
-    var displayImageData: String?  // Base64图片数据
+    var isDownloadingOriginal: Bool = false  // 正在下载原图
+    var displayImageData: String?  // Base64图片数据或本地文件路径
     var isThumbnail: Bool = true
     
     enum CodingKeys: String, CodingKey {
