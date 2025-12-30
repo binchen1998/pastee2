@@ -45,7 +45,8 @@ struct ClipboardEntry: Codable, Identifiable, Equatable {
          thumbnail: String? = nil,
          originalDeleted: Bool? = nil,
          createdAt: Date = Date(),
-         isBookmarked: Bool = false) {
+         isBookmarked: Bool = false,
+         isUploading: Bool = false) {
         self.id = id
         self.contentType = contentType
         self.content = content
@@ -55,6 +56,7 @@ struct ClipboardEntry: Codable, Identifiable, Equatable {
         self.originalDeleted = originalDeleted
         self.createdAt = createdAt
         self.isBookmarked = isBookmarked
+        self.isUploading = isUploading
     }
     
     init(from decoder: Decoder) throws {

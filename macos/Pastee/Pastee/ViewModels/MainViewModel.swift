@@ -70,6 +70,22 @@ class MainViewModel: ObservableObject {
             }
             .store(in: &cancellables)
         
+        // 上传完成
+        NotificationCenter.default.publisher(for: .uploadCompleted)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] notification in
+                self?.handleUploadCompleted(notification)
+            }
+            .store(in: &cancellables)
+        
+        // 上传失败
+        NotificationCenter.default.publisher(for: .uploadFailed)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] notification in
+                self?.handleUploadFailed(notification)
+            }
+            .store(in: &cancellables)
+        
         // WebSocket状态
         WebSocketService.shared.onConnected = { [weak self] in
             DispatchQueue.main.async {
@@ -443,6 +459,38 @@ class MainViewModel: ObservableObject {
         // 本地添加到列表顶部
         if !items.contains(where: { $0.id == entry.id }) {
             items.insert(entry, at: 0)
+        }
+    }
+    
+    private func handleUploadCompleted(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let localId = userInfo["localId"] as? String else { return }
+        
+        print("⚡️ [MainVM] Upload completed for: \(localId)")
+        
+        // 找到本地项目并更新状态
+        if let index = items.firstIndex(where: { $0.id == localId }) {
+            items[index].isUploading = false
+            items[index].uploadFailed = false
+            
+            // 如果服务器返回了新条目，用服务器的 ID 替换本地 ID
+            if let serverEntry = userInfo["serverEntry"] as? ClipboardEntry {
+                items[index].id = serverEntry.id
+                // 保留本地的 displayImageData，因为服务器返回的可能只是缩略图
+            }
+        }
+    }
+    
+    private func handleUploadFailed(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let localId = userInfo["localId"] as? String else { return }
+        
+        print("⚡️ [MainVM] Upload failed for: \(localId)")
+        
+        // 找到本地项目并更新状态
+        if let index = items.firstIndex(where: { $0.id == localId }) {
+            items[index].isUploading = false
+            items[index].uploadFailed = true
         }
     }
     

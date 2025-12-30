@@ -97,17 +97,20 @@ class ClipboardWatcher {
         if signature == lastSignature { return }
         lastSignature = signature
         
-        // 生成缩略图作为预览
-        let base64Thumbnail = generateThumbnail(from: image)
+        // 生成缩略图作为预览，如果失败则使用原图
+        let base64Thumbnail = generateThumbnail(from: image) ?? pngData.base64EncodedString()
         
         var entry = ClipboardEntry(
             id: UUID().uuidString,
             contentType: "image",
             createdAt: Date(),
-            isBookmarked: false
+            isBookmarked: false,
+            isUploading: true  // 标记为上传中
         )
         entry.displayImageData = base64Thumbnail
         entry.isThumbnail = true
+        
+        print("⚡️ [ClipboardWatcher] New image entry created, displayImageData length: \(base64Thumbnail.count)")
         
         onNewContent?(entry)
         NotificationCenter.default.post(name: .clipboardChanged, object: entry)
@@ -172,21 +175,42 @@ class ClipboardWatcher {
     
     private func uploadImageEntry(_ entry: ClipboardEntry, imageData: Data) {
         let deviceId = AuthService.shared.getDeviceId()
+        let entryId = entry.id
         
         Task {
             do {
-                _ = try await APIService.shared.uploadImageItem(
+                let uploadedEntry = try await APIService.shared.uploadImageItem(
                     imageData: imageData,
                     deviceId: deviceId,
                     createdAt: entry.createdAt
                 )
+                print("⚡️ [ClipboardWatcher] Upload completed: \(entryId)")
+                // 通知上传完成，传递本地ID和服务器返回的条目
+                NotificationCenter.default.post(
+                    name: .uploadCompleted,
+                    object: nil,
+                    userInfo: ["localId": entryId, "serverEntry": uploadedEntry]
+                )
             } catch APIError.conflict {
-                // 重复项，忽略
+                // 重复项，标记上传完成
+                print("⚡️ [ClipboardWatcher] Upload conflict (duplicate): \(entryId)")
+                NotificationCenter.default.post(
+                    name: .uploadCompleted,
+                    object: nil,
+                    userInfo: ["localId": entryId]
+                )
             } catch {
                 // 上传失败，保存为草稿
+                print("⚡️ [ClipboardWatcher] Upload failed: \(error)")
                 var failedEntry = entry
                 failedEntry.uploadFailed = true
+                failedEntry.isUploading = false
                 DraftManager.shared.saveDraft(failedEntry)
+                NotificationCenter.default.post(
+                    name: .uploadFailed,
+                    object: nil,
+                    userInfo: ["localId": entryId]
+                )
             }
         }
     }

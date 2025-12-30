@@ -396,6 +396,8 @@ extension Notification.Name {
     static let pasteToFocusedApp = Notification.Name("pasteToFocusedApp")
     static let showSettingsWindow = Notification.Name("showSettingsWindow")
     static let showSearchWindow = Notification.Name("showSearchWindow")
+    static let uploadCompleted = Notification.Name("uploadCompleted")
+    static let uploadFailed = Notification.Name("uploadFailed")
 }
 
 // MARK: - KeyablePanel
