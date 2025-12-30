@@ -110,13 +110,35 @@ struct ClipboardPopupView: View {
     }
     
     private func viewImageItem(_ item: ClipboardEntry) {
-        guard item.contentType == "image" else { return }
-        
-        // 获取图片数据
-        if let base64 = item.displayImageData ?? item.content,
-           let data = Data(base64Encoded: base64) {
-            showImageViewer(data: data, title: "Image Viewer")
+        guard item.contentType == "image" else {
+            print("⚡️ [ViewImage] Not an image item")
+            return
         }
+        
+        print("⚡️ [ViewImage] displayImageData: \(item.displayImageData?.prefix(50) ?? "nil")")
+        print("⚡️ [ViewImage] content: \(item.content?.prefix(50) ?? "nil")")
+        print("⚡️ [ViewImage] thumbnail: \(item.thumbnail?.prefix(50) ?? "nil")")
+        
+        // 获取图片数据 - 优先使用 displayImageData，然后是 content，最后是 thumbnail
+        var base64String: String? = item.displayImageData ?? item.content ?? item.thumbnail
+        
+        // 移除可能的 data:image/xxx;base64, 前缀
+        if let str = base64String, str.contains(",") {
+            base64String = String(str.split(separator: ",").last ?? "")
+        }
+        
+        guard let base64 = base64String, !base64.isEmpty else {
+            print("⚡️ [ViewImage] No image data available")
+            return
+        }
+        
+        guard let data = Data(base64Encoded: base64) else {
+            print("⚡️ [ViewImage] Failed to decode base64, length: \(base64.count)")
+            return
+        }
+        
+        print("⚡️ [ViewImage] Opening image viewer with \(data.count) bytes")
+        showImageViewer(data: data, title: "Image Viewer")
     }
     
     // MARK: - Sidebar
