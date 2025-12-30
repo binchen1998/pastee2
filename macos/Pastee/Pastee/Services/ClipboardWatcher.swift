@@ -97,26 +97,53 @@ class ClipboardWatcher {
         if signature == lastSignature { return }
         lastSignature = signature
         
-        // 生成缩略图作为预览，如果失败则使用原图
-        let base64Thumbnail = generateThumbnail(from: image) ?? pngData.base64EncodedString()
+        let entryId = UUID().uuidString
+        
+        // 1. 先保存图片到本地文件（参考 Windows 实现）
+        let localPath = saveImageToLocal(id: entryId, imageData: pngData)
         
         var entry = ClipboardEntry(
-            id: UUID().uuidString,
+            id: entryId,
             contentType: "image",
             createdAt: Date(),
             isBookmarked: false,
             isUploading: true  // 标记为上传中
         )
-        entry.displayImageData = base64Thumbnail
-        entry.isThumbnail = true
         
-        print("⚡️ [ClipboardWatcher] New image entry created, displayImageData length: \(base64Thumbnail.count)")
+        // 2. displayImageData 使用本地文件路径（这样可以立即显示图片）
+        entry.displayImageData = localPath
+        entry.isThumbnail = false  // 本地保存的是原图
+        
+        print("⚡️ [ClipboardWatcher] New image entry created, local path: \(localPath ?? "nil")")
         
         onNewContent?(entry)
         NotificationCenter.default.post(name: .clipboardChanged, object: entry)
         
-        // 上传到服务器
+        // 3. 上传到服务器
         uploadImageEntry(entry, imageData: pngData)
+    }
+    
+    /// 保存图片到本地文件
+    private func saveImageToLocal(id: String, imageData: Data) -> String? {
+        let fileManager = FileManager.default
+        let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let imageDir = appSupport.appendingPathComponent("Pastee/Images", isDirectory: true)
+        
+        // 创建目录
+        try? fileManager.createDirectory(at: imageDir, withIntermediateDirectories: true)
+        
+        let fileName = "\(id).png"
+        let filePath = imageDir.appendingPathComponent(fileName)
+        
+        do {
+            try imageData.write(to: filePath)
+            print("⚡️ [ClipboardWatcher] Image saved to: \(filePath.path)")
+            return filePath.path
+        } catch {
+            print("⚡️ [ClipboardWatcher] Failed to save image: \(error)")
+            // 如果保存失败，回退到 base64
+            return imageData.base64EncodedString()
+        }
     }
     
     private func generateThumbnail(from image: NSImage) -> String? {

@@ -169,7 +169,15 @@ struct ClipboardCardView: View {
     private func loadImage() -> NSImage? {
         guard let imageData = item.displayImageData else { return nil }
         
-        // 1. 尝试Base64解码
+        // 1. 优先尝试本地文件路径（以 /Users 或 /var 等开头的完整路径）
+        if imageData.hasPrefix("/Users") || imageData.hasPrefix("/var") || imageData.hasPrefix("/tmp") {
+            if FileManager.default.fileExists(atPath: imageData),
+               let image = NSImage(contentsOfFile: imageData) {
+                return image
+            }
+        }
+        
+        // 2. 尝试Base64解码
         if isBase64Like(imageData) {
             var base64String = imageData
             // 处理 data:image/xxx;base64, 前缀
@@ -187,9 +195,18 @@ struct ClipboardCardView: View {
             }
         }
         
-        // 2. 尝试URL加载
-        if imageData.hasPrefix("http") || imageData.hasPrefix("/") {
-            let urlString = imageData.hasPrefix("/") ? "https://api.pastee-app.com\(imageData)" : imageData
+        // 3. 尝试远程URL加载
+        if imageData.hasPrefix("http") {
+            if let url = URL(string: imageData),
+               let data = try? Data(contentsOf: url),
+               let image = NSImage(data: data) {
+                return image
+            }
+        }
+        
+        // 4. 尝试相对API路径
+        if imageData.hasPrefix("/") {
+            let urlString = "https://api.pastee-app.com\(imageData)"
             if let url = URL(string: urlString),
                let data = try? Data(contentsOf: url),
                let image = NSImage(data: data) {
@@ -197,7 +214,7 @@ struct ClipboardCardView: View {
             }
         }
         
-        // 3. 尝试本地文件路径
+        // 5. 最后尝试作为任意本地文件路径
         if FileManager.default.fileExists(atPath: imageData),
            let image = NSImage(contentsOfFile: imageData) {
             return image
