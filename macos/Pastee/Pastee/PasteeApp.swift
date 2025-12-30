@@ -234,12 +234,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             modalWindow.level = .modalPanel
             modalWindow.center()
             
+            // 确保窗口可以接收键盘事件
+            modalWindow.isReleasedWhenClosed = false
+            
             let hostingView = NSHostingView(rootView: settingsView)
             hostingView.wantsLayer = true
             hostingView.layer?.backgroundColor = .clear
             modalWindow.contentView = hostingView
             
             self.settingsWindow = modalWindow
+            
+            // 先显示窗口并激活
+            modalWindow.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            
+            // 运行 modal
             NSApp.runModal(for: modalWindow)
             self.settingsWindow = nil
         }
@@ -271,12 +280,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             modalWindow.level = .modalPanel
             modalWindow.center()
             
+            // 确保窗口可以接收键盘事件
+            modalWindow.isReleasedWhenClosed = false
+            
             let hostingView = NSHostingView(rootView: searchView)
             hostingView.wantsLayer = true
             hostingView.layer?.backgroundColor = .clear
             modalWindow.contentView = hostingView
             
             self.searchWindow = modalWindow
+            
+            // 先显示窗口并激活
+            modalWindow.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            
+            // 运行 modal
             NSApp.runModal(for: modalWindow)
             self.searchWindow = nil
         }
