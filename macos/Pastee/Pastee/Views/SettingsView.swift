@@ -375,7 +375,12 @@ struct SettingsView: View {
     }
     
     private func closeWindow() {
-        NSApp.keyWindow?.close()
+        // 查找包含此视图的窗口并关闭
+        if let window = NSApp.windows.first(where: { $0.contentView is NSHostingView<SettingsView> }) {
+            window.close()
+        } else {
+            NSApp.keyWindow?.close()
+        }
     }
 }
 
