@@ -276,12 +276,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     // MARK: - Accessibility Permission
     
+    private static let kDontShowAccessibilityPrompt = "dontShowAccessibilityPrompt"
+    
     private func checkAccessibilityPermission() {
         let trusted = AXIsProcessTrusted()
         
         if !trusted {
-            // 显示友好的权限请求对话框
-            showAccessibilityPermissionDialog()
+            // 检查用户是否选择了不再提示
+            let dontShow = UserDefaults.standard.bool(forKey: AppDelegate.kDontShowAccessibilityPrompt)
+            if !dontShow {
+                showAccessibilityPermissionDialog()
+            }
         }
     }
     
@@ -299,10 +304,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         alert.alertStyle = .warning
         alert.icon = NSImage(systemSymbolName: "hand.raised.circle.fill", accessibilityDescription: "Permission")
         
+        // 添加"不再提示"复选框
+        let checkbox = NSButton(checkboxWithTitle: "不再提示", target: nil, action: nil)
+        checkbox.state = .off
+        alert.accessoryView = checkbox
+        
         alert.addButton(withTitle: "打开系统设置")
         alert.addButton(withTitle: "稍后再说")
         
         let response = alert.runModal()
+        
+        // 保存用户的"不再提示"选择
+        if checkbox.state == .on {
+            UserDefaults.standard.set(true, forKey: AppDelegate.kDontShowAccessibilityPrompt)
+        }
         
         if response == .alertFirstButtonReturn {
             // 打开系统设置的辅助功能页面
