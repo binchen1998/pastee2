@@ -478,6 +478,13 @@ namespace Pastee.App.ViewModels
                     item.InitializeImageState();
                     Items.Insert(0, item);
                     System.Diagnostics.Debug.WriteLine($"[MainVM] 条目 {item.Id} 插入成功，当前列表数量: {Items.Count}");
+                    
+                    // 如果是图片且只有缩略图，自动下载原图
+                    if (item.ContentType == "image" && item.IsThumbnail && !item.OriginalDeleted)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[MainVM] 触发自动下载原图: {item.Id}");
+                        _ = AutoDownloadOriginalImageAsync(item);
+                    }
                 }
                 else
                 {
