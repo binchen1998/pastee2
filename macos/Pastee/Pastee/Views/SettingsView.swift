@@ -319,36 +319,46 @@ struct SettingsView: View {
     }
     
     private func openHotkeySettings() {
-        let hotkeyView = HotkeySettingsView(
-            currentHotkey: currentHotkey,
-            onSave: { newHotkey in
-                currentHotkey = newHotkey
-            },
-            onDismiss: {
-                NSApp.keyWindow?.close()
-            }
-        )
-        
-        let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 280),
-            styleMask: [.borderless, .utilityWindow],
-            backing: .buffered,
-            defer: false
-        )
-        panel.isMovableByWindowBackground = true
-        panel.backgroundColor = .clear
-        panel.isOpaque = false
-        panel.hasShadow = true
-        panel.level = .floating
-        panel.center()
-        panel.isReleasedWhenClosed = false
-        
-        let hostingView = NSHostingView(rootView: hotkeyView)
-        hostingView.wantsLayer = true
-        hostingView.layer?.backgroundColor = .clear
-        panel.contentView = hostingView
-        
-        panel.makeKeyAndOrderFront(nil)
+        // 使用 DispatchQueue 避免在 SwiftUI 更新中调用
+        DispatchQueue.main.async { [self] in
+            let hotkeyView = HotkeySettingsView(
+                currentHotkey: currentHotkey,
+                onSave: { newHotkey in
+                    self.currentHotkey = newHotkey
+                },
+                onDismiss: {
+                    NSApp.stopModal()
+                    NSApp.keyWindow?.close()
+                }
+            )
+            
+            // 使用自定义 Panel 类让窗口可以接收键盘输入
+            let panel = KeyablePanel(
+                contentRect: NSRect(x: 0, y: 0, width: 420, height: 280),
+                styleMask: [.borderless, .utilityWindow],
+                backing: .buffered,
+                defer: false
+            )
+            panel.isMovableByWindowBackground = true
+            panel.backgroundColor = .clear
+            panel.isOpaque = false
+            panel.hasShadow = true
+            panel.level = .modalPanel
+            panel.center()
+            panel.isReleasedWhenClosed = false
+            
+            let hostingView = NSHostingView(rootView: hotkeyView)
+            hostingView.wantsLayer = true
+            hostingView.layer?.backgroundColor = .clear
+            panel.contentView = hostingView
+            
+            // 先显示并激活
+            panel.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            
+            // 运行 modal
+            NSApp.runModal(for: panel)
+        }
     }
     
     private func saveSettings() {
