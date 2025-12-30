@@ -297,13 +297,6 @@
                             </TextBlock>
                         </Button>
 
-                        <Button Click="OnSettingsButtonClick"
-                                Style="{StaticResource LinkButtonStyle}"
-                                HorizontalContentAlignment="Left"
-                                Margin="0,0,0,8">
-                            <TextBlock Text="Settings" HorizontalAlignment="Left"/>
-                        </Button>
-
                         <Button Command="{Binding SelectCategoryCommand}"
                                 CommandParameter="drafts"
                                 Style="{StaticResource LinkButtonStyle}"
@@ -448,6 +441,14 @@
                             Click="OnClearDraftsClick"
                             ToolTip="Clear all drafts"
                             Visibility="Collapsed"/>
+                    
+                    <!-- Settings Button -->
+                    <Button Style="{StaticResource IconButtonStyle}"
+                            Content="⚙" 
+                            FontSize="15"
+                            Width="32" Height="32"
+                            Click="OnSettingsButtonClick"
+                            ToolTip="Settings"/>
                     
                     <!-- Search Button -->
                     <Button Style="{StaticResource IconButtonStyle}"
