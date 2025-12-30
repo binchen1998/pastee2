@@ -74,39 +74,43 @@ struct ClipboardPopupView: View {
     private func showEditWindow(for item: ClipboardEntry) {
         guard item.contentType != "image" else { return }
         
-        let editView = EditTextSheet(
-            content: item.content ?? "",
-            onSave: { newContent in
-                Task {
-                    await viewModel.updateItemContent(item, newContent: newContent)
-                }
-                NSApp.keyWindow?.close()
-            },
-            onCancel: {
-                NSApp.keyWindow?.close()
-            }
-        )
-        
-        let window = KeyablePanel(
+        // 创建模态窗口
+        let modalWindow = KeyablePanel(
             contentRect: NSRect(x: 0, y: 0, width: 480, height: 350),
             styleMask: [.borderless, .utilityWindow],
             backing: .buffered,
             defer: false
         )
-        window.isMovableByWindowBackground = true
-        window.backgroundColor = .clear
-        window.isOpaque = false
-        window.hasShadow = true
-        window.level = .floating
-        window.center()
+        modalWindow.isMovableByWindowBackground = true
+        modalWindow.backgroundColor = .clear
+        modalWindow.isOpaque = false
+        modalWindow.hasShadow = true
+        modalWindow.level = .modalPanel
+        modalWindow.center()
+        
+        let editView = EditTextSheet(
+            content: item.content ?? "",
+            onSave: { [weak modalWindow] newContent in
+                Task {
+                    await viewModel.updateItemContent(item, newContent: newContent)
+                }
+                NSApp.stopModal()
+                modalWindow?.close()
+            },
+            onCancel: { [weak modalWindow] in
+                NSApp.stopModal()
+                modalWindow?.close()
+            }
+        )
         
         let hostingView = NSHostingView(rootView: editView)
         hostingView.wantsLayer = true
         hostingView.layer?.backgroundColor = .clear
-        window.contentView = hostingView
+        modalWindow.contentView = hostingView
         
-        window.makeKeyAndOrderFront(nil)
+        // 运行模态
         NSApp.activate(ignoringOtherApps: true)
+        NSApp.runModal(for: modalWindow)
     }
     
     private func viewImageItem(_ item: ClipboardEntry) {
