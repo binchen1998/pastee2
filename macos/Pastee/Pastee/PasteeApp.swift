@@ -74,17 +74,36 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let button = statusItem?.button {
             button.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "Pastee")
             button.image?.isTemplate = true
+            // 单击打开窗口
+            button.action = #selector(statusBarButtonClicked(_:))
+            button.target = self
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
+    }
+    
+    @objc func statusBarButtonClicked(_ sender: NSStatusBarButton) {
+        guard let event = NSApp.currentEvent else { return }
         
-        let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Show Pastee", action: #selector(showPopup), keyEquivalent: ""))
-        menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Search...", action: #selector(showSearch), keyEquivalent: "f"))
-        menu.addItem(NSMenuItem(title: "Settings...", action: #selector(showSettings), keyEquivalent: ","))
-        menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Quit Pastee", action: #selector(quit), keyEquivalent: "q"))
-        
-        statusItem?.menu = menu
+        if event.type == .rightMouseUp {
+            // 右键：显示菜单
+            let menu = NSMenu()
+            menu.addItem(NSMenuItem(title: "Show Pastee", action: #selector(showPopup), keyEquivalent: ""))
+            menu.addItem(NSMenuItem.separator())
+            menu.addItem(NSMenuItem(title: "Search...", action: #selector(showSearch), keyEquivalent: "f"))
+            menu.addItem(NSMenuItem(title: "Settings...", action: #selector(showSettings), keyEquivalent: ","))
+            menu.addItem(NSMenuItem.separator())
+            menu.addItem(NSMenuItem(title: "Quit Pastee", action: #selector(quit), keyEquivalent: "q"))
+            
+            statusItem?.menu = menu
+            statusItem?.button?.performClick(nil)
+            // 点击后清除菜单，以便下次左键可以正常触发
+            DispatchQueue.main.async {
+                self.statusItem?.menu = nil
+            }
+        } else {
+            // 左键：打开/关闭窗口
+            togglePopup()
+        }
     }
     
     func startApp() {
@@ -189,7 +208,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             settingsWindow?.hasShadow = true
             settingsWindow?.level = .floating
             settingsWindow?.center()
-            settingsWindow?.contentView = NSHostingView(rootView: settingsView)
+            let hostingView = NSHostingView(rootView: settingsView)
+            hostingView.wantsLayer = true
+            hostingView.layer?.backgroundColor = .clear
+            settingsWindow?.contentView = hostingView
         }
         
         settingsWindow?.makeKeyAndOrderFront(nil)
@@ -216,7 +238,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             searchWindow?.hasShadow = true
             searchWindow?.level = .floating
             searchWindow?.center()
-            searchWindow?.contentView = NSHostingView(rootView: searchView)
+            let hostingView = NSHostingView(rootView: searchView)
+            hostingView.wantsLayer = true
+            hostingView.layer?.backgroundColor = .clear
+            searchWindow?.contentView = hostingView
         }
         
         searchWindow?.makeKeyAndOrderFront(nil)
