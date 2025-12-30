@@ -31,11 +31,6 @@ struct ClipboardPopupView: View {
                 sidebarView
                     .frame(width: 140)
                 
-                // 分隔线
-                Rectangle()
-                    .fill(Theme.border)
-                    .frame(width: 1)
-                
                 // 主内容区
                 mainContentView
             }
