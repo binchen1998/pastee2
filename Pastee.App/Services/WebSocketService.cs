@@ -74,12 +74,16 @@ namespace Pastee.App.Services
 
         private async Task ReceiveLoopAsync()
         {
-            var buffer = new byte[1024 * 4];
+            // 增大缓冲区以处理大消息（如包含 base64 图片的消息）
+            var buffer = new byte[1024 * 64]; // 64KB 缓冲区
+            var messageBuffer = new System.IO.MemoryStream();
+            
             try
             {
                 while (_webSocket?.State == WebSocketState.Open && _cts != null && !_cts.IsCancellationRequested)
                 {
                     var result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), _cts.Token);
+                    
                     if (result.MessageType == WebSocketMessageType.Close)
                     {
                         System.Diagnostics.Debug.WriteLine("[WS] 收到关闭消息");
@@ -87,16 +91,32 @@ namespace Pastee.App.Services
                         break;
                     }
 
-                    var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                    System.Diagnostics.Debug.WriteLine($"[WS] 收到原始消息: {message}");
+                    // 将接收到的数据写入消息缓冲区
+                    messageBuffer.Write(buffer, 0, result.Count);
                     
-                    // 处理心跳响应
-                    if (HandleHeartbeatResponse(message))
+                    // 只有当消息完整时才处理
+                    if (result.EndOfMessage)
                     {
-                        continue; // pong 消息不需要传递给业务层
+                        var messageBytes = messageBuffer.ToArray();
+                        var message = Encoding.UTF8.GetString(messageBytes);
+                        
+                        // 重置消息缓冲区
+                        messageBuffer.SetLength(0);
+                        
+                        System.Diagnostics.Debug.WriteLine($"[WS] 收到完整消息 (长度: {message.Length})");
+                        
+                        // 处理心跳响应
+                        if (HandleHeartbeatResponse(message))
+                        {
+                            continue; // pong 消息不需要传递给业务层
+                        }
+                        
+                        MessageReceived?.Invoke(this, message);
                     }
-                    
-                    MessageReceived?.Invoke(this, message);
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[WS] 收到消息片段 (累计长度: {messageBuffer.Length})");
+                    }
                 }
             }
             catch (OperationCanceledException)
@@ -107,6 +127,10 @@ namespace Pastee.App.Services
             {
                 System.Diagnostics.Debug.WriteLine($"[WS] 接收异常: {ex.Message}");
                 await HandleDisconnectAsync();
+            }
+            finally
+            {
+                messageBuffer.Dispose();
             }
         }
 
