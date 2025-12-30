@@ -348,6 +348,10 @@ struct FocusableTextField: NSViewRepresentable {
         textField.textColor = NSColor(Theme.textPrimary)
         textField.delegate = context.coordinator
         
+        // 设置 action 用于处理 Enter 键
+        textField.target = context.coordinator
+        textField.action = #selector(Coordinator.textFieldAction(_:))
+        
         // 设置光标颜色
         if let fieldEditor = textField.window?.fieldEditor(true, for: textField) as? NSTextView {
             fieldEditor.insertionPointColor = NSColor(Theme.textPrimary)
@@ -393,11 +397,18 @@ struct FocusableTextField: NSViewRepresentable {
         Coordinator(self)
     }
     
-    class Coordinator: NSObject, NSTextFieldDelegate {
+    class Coordinator: NSObject, NSTextFieldDelegate, NSControlTextEditingDelegate {
         var parent: FocusableTextField
         
         init(_ parent: FocusableTextField) {
             self.parent = parent
+        }
+        
+        // NSTextField action - 当按下 Enter 键时触发
+        @objc func textFieldAction(_ sender: NSTextField) {
+            print("⚡️ [FocusableTextField] textFieldAction triggered (Enter key)")
+            parent.text = sender.stringValue
+            parent.onSubmit()
         }
         
         func controlTextDidChange(_ obj: Notification) {
@@ -406,6 +417,7 @@ struct FocusableTextField: NSViewRepresentable {
             }
         }
         
+        // 处理键盘命令，包括 Enter 键
         func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
             print("⚡️ [FocusableTextField] doCommandBy: \(commandSelector)")
             if commandSelector == #selector(NSResponder.insertNewline(_:)) {
@@ -414,6 +426,18 @@ struct FocusableTextField: NSViewRepresentable {
                 return true
             }
             return false
+        }
+        
+        // 当按下 Enter 键时也会触发这个 (备用方案)
+        func controlTextDidEndEditing(_ obj: Notification) {
+            print("⚡️ [FocusableTextField] controlTextDidEndEditing")
+            if let textField = obj.object as? NSTextField {
+                // 检查是否是因为按了 Enter 键
+                if let event = NSApp.currentEvent, event.keyCode == 36 { // 36 是 Enter 键
+                    print("⚡️ [FocusableTextField] Enter detected in controlTextDidEndEditing")
+                    parent.onSubmit()
+                }
+            }
         }
     }
 }
