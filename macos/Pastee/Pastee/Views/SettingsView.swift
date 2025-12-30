@@ -309,14 +309,18 @@ struct SettingsView: View {
         deviceId = AuthService.shared.getDeviceId()
         version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
         
-        // 加载用户信息
-        Task {
+        // 先尝试从缓存获取
+        if let cachedInfo = AuthService.shared.getCachedUserInfo() {
+            email = cachedInfo.email
+            print("⚡️ [Settings] Using cached email: \(cachedInfo.email)")
+        }
+        
+        // 异步加载用户信息
+        Task { @MainActor in
             do {
                 if let userInfo = try await AuthService.shared.getUserInfo() {
-                    await MainActor.run {
-                        email = userInfo.email
-                        print("⚡️ [Settings] Loaded email: \(userInfo.email)")
-                    }
+                    self.email = userInfo.email
+                    print("⚡️ [Settings] Loaded email: \(userInfo.email)")
                 } else {
                     print("⚡️ [Settings] getUserInfo returned nil")
                 }
