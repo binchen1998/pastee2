@@ -310,8 +310,13 @@ class MainViewModel: ObservableObject {
         guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
         
         do {
-            _ = try await APIService.shared.updateItemContent(id: item.id, content: newContent)
-            items[index].content = newContent
+            let updatedItem = try await APIService.shared.updateItemContent(id: item.id, content: newContent)
+            // 替换整个对象以触发 SwiftUI 更新
+            await MainActor.run {
+                var newItem = items[index]
+                newItem.content = newContent
+                items[index] = newItem
+            }
             print("⚡️ [MainVM] Content updated: \(item.id)")
         } catch {
             print("⚡️ [MainVM] Failed to update item: \(error)")
