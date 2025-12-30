@@ -123,10 +123,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func startApp() {
-        // 检查辅助功能权限
-        checkAccessibilityPermission()
-        
-        // 启动剪贴板监控
+        // 启动剪贴板监控（先启动，不依赖权限检查）
         clipboardWatcher.start()
         
         // 注册全局快捷键
@@ -150,6 +147,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // 程序启动后显示主窗口
         showPopup()
+        
+        // 延迟检查辅助功能权限（避免在窗口切换时调用 runModal 导致崩溃）
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.checkAccessibilityPermission()
+        }
     }
     
     // MARK: - Window Management
