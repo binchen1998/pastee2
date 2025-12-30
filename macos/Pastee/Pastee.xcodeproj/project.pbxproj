@@ -23,6 +23,7 @@
 		009 /* HotkeyService.swift */ = {isa = PBXBuildFile; fileRef = 109; };
 		010 /* SettingsManager.swift */ = {isa = PBXBuildFile; fileRef = 110; };
 		011 /* UpdateService.swift */ = {isa = PBXBuildFile; fileRef = 111; };
+		026 /* ImageCacheService.swift */ = {isa = PBXBuildFile; fileRef = 128; };
 		/* ViewModels */
 		012 /* MainViewModel.swift */ = {isa = PBXBuildFile; fileRef = 112; };
 		013 /* LoginViewModel.swift */ = {isa = PBXBuildFile; fileRef = 113; };
@@ -78,6 +79,7 @@
 		124 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		/* Resources */
 		127 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		128 /* ImageCacheService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCacheService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -142,6 +144,7 @@
 				109 /* HotkeyService.swift */,
 				110 /* SettingsManager.swift */,
 				111 /* UpdateService.swift */,
+				128 /* ImageCacheService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -269,6 +272,7 @@
 				009 /* HotkeyService.swift */,
 				010 /* SettingsManager.swift */,
 				011 /* UpdateService.swift */,
+				026 /* ImageCacheService.swift */,
 				012 /* MainViewModel.swift */,
 				013 /* LoginViewModel.swift */,
 				014 /* PopupWindow.swift */,

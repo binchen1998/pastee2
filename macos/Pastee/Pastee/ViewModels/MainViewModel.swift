@@ -136,22 +136,36 @@ class MainViewModel: ObservableObject {
     // MARK: - 自动下载原图
     
     private func autoDownloadOriginalImage(_ item: ClipboardEntry) async {
-        // 随机延迟 300-2000ms，避免同时发起大量请求
+        // 1. 先检查本地缓存
+        if let cachedBase64 = ImageCacheService.shared.getCachedOriginalImageData(id: item.id) {
+            print("[MainVM] 使用本地缓存原图: \(item.id)")
+            if let index = items.firstIndex(where: { $0.id == item.id }) {
+                items[index].displayImageData = cachedBase64
+                items[index].isThumbnail = false
+            }
+            return
+        }
+        
+        // 2. 随机延迟 300-2000ms，避免同时发起大量请求
         let delay = UInt64.random(in: 300_000_000...2_000_000_000)
         try? await Task.sleep(nanoseconds: delay)
         
         do {
-            // API返回的是base64字符串
+            // 3. 从服务器下载原图
+            print("[MainVM] 正在从服务器下载原图: \(item.id)")
             if let base64String = try await APIService.shared.getOriginalImage(id: item.id) {
-                // 更新对应项目的图片数据
+                // 4. 保存到本地缓存
+                ImageCacheService.shared.saveOriginalImage(id: item.id, base64Data: base64String)
+                
+                // 5. 更新对应项目的图片数据
                 if let index = items.firstIndex(where: { $0.id == item.id }) {
                     items[index].displayImageData = base64String
                     items[index].isThumbnail = false
-                    print("[MainVM] Original image downloaded for: \(item.id)")
+                    print("[MainVM] 原图下载并缓存成功: \(item.id)")
                 }
             }
         } catch {
-            print("[MainVM] Failed to download original image: \(error)")
+            print("[MainVM] 原图下载失败: \(error)")
         }
     }
     
