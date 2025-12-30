@@ -164,30 +164,6 @@ struct HotkeyButton: View {
     }
 }
 
-// MARK: - Button Styles
-
-struct LinkButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 14))
-            .foregroundColor(configuration.isPressed ? Theme.textSecondary : Theme.accent)
-    }
-}
-
-struct PrimaryButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 14, weight: .medium))
-            .foregroundColor(.white)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
-            .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(configuration.isPressed ? Theme.accent.opacity(0.8) : Theme.accent)
-            )
-    }
-}
-
 // MARK: - Preview
 
 #Preview {
