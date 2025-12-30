@@ -233,6 +233,11 @@ class MainViewModel: ObservableObject {
     func selectCategory(_ category: String) {
         selectedCategory = category
         
+        // 立即清空列表，避免显示旧数据
+        items = []
+        currentPage = 1
+        hasMore = true
+        
         // 更新分类选中状态
         for i in categories.indices {
             categories[i].isSelected = categories[i].name == category

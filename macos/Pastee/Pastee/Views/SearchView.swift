@@ -336,6 +336,12 @@ struct FocusableTextField: NSViewRepresentable {
         textField.font = .systemFont(ofSize: 14)
         textField.textColor = NSColor(Theme.textPrimary)
         textField.delegate = context.coordinator
+        
+        // 设置光标颜色
+        if let fieldEditor = textField.window?.fieldEditor(true, for: textField) as? NSTextView {
+            fieldEditor.insertionPointColor = NSColor(Theme.textPrimary)
+        }
+        
         return textField
     }
     
@@ -344,15 +350,24 @@ struct FocusableTextField: NSViewRepresentable {
             nsView.stringValue = text
         }
         
+        // 更新文字颜色（主题切换时）
+        nsView.textColor = NSColor(Theme.textPrimary)
+        
         // 当 shouldFocus 变为 true 时，让窗口成为 key 并聚焦到输入框
         if shouldFocus {
-            DispatchQueue.main.async {
+            // 使用更长的延迟确保 modal 窗口完全准备好
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 if let window = nsView.window {
                     window.makeKey()
                     window.makeFirstResponder(nsView)
+                    
+                    // 设置光标颜色
+                    if let fieldEditor = window.fieldEditor(true, for: nsView) as? NSTextView {
+                        fieldEditor.insertionPointColor = NSColor(Theme.textPrimary)
+                    }
                 }
-                shouldFocus = false
             }
+            shouldFocus = false
         }
     }
     
