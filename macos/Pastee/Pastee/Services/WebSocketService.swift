@@ -38,11 +38,18 @@ class WebSocketService: NSObject, URLSessionWebSocketDelegate {
         
         guard let url = URL(string: "\(wsBaseURL)/\(token)/\(deviceId)") else { return }
         
-        let session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
+        // 配置 URLSession，禁用超时
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = TimeInterval(Int.max)  // 无限制
+        config.timeoutIntervalForResource = TimeInterval(Int.max) // 无限制
+        config.waitsForConnectivity = true
+        
+        let session = URLSession(configuration: config, delegate: self, delegateQueue: nil)
         webSocket = session.webSocketTask(with: url)
         webSocket?.resume()
         
         receiveMessage()
+        print("⚡️ [WS] Connecting to \(url)")
     }
     
     func disconnect() {
@@ -94,8 +101,10 @@ class WebSocketService: NSObject, URLSessionWebSocketDelegate {
         
         // 处理 pong
         if json["type"] as? String == "pong" {
+            print("⚡️ [WS] Received pong")
             DispatchQueue.main.async {
                 self.pongTimeoutTimer?.invalidate()
+                self.pongTimeoutTimer = nil
             }
             return
         }
@@ -163,10 +172,12 @@ class WebSocketService: NSObject, URLSessionWebSocketDelegate {
     }
     
     private func sendPing() {
-        guard let pingData = try? JSONSerialization.data(withJSONObject: ["type": "ping"]) else { return }
+        let pingMessage = "{\"type\":\"ping\"}"
         
-        webSocket?.send(.data(pingData)) { [weak self] error in
-            if error != nil {
+        print("⚡️ [WS] Sending ping")
+        webSocket?.send(.string(pingMessage)) { [weak self] error in
+            if let error = error {
+                print("⚡️ [WS] Ping failed: \(error)")
                 self?.handleDisconnect()
                 return
             }
@@ -174,6 +185,7 @@ class WebSocketService: NSObject, URLSessionWebSocketDelegate {
             // 设置 pong 超时
             DispatchQueue.main.async {
                 self?.pongTimeoutTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: false) { [weak self] _ in
+                    print("⚡️ [WS] Pong timeout!")
                     self?.handleDisconnect()
                 }
             }
@@ -204,6 +216,7 @@ class WebSocketService: NSObject, URLSessionWebSocketDelegate {
     // MARK: - URLSessionWebSocketDelegate
     
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
+        print("⚡️ [WS] Connected!")
         DispatchQueue.main.async {
             self.isConnected = true
             self.onConnected?()
@@ -212,6 +225,7 @@ class WebSocketService: NSObject, URLSessionWebSocketDelegate {
     }
     
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
+        print("⚡️ [WS] Closed with code: \(closeCode)")
         handleDisconnect()
     }
 }
