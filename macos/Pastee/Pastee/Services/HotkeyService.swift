@@ -15,6 +15,7 @@ class HotkeyService {
     private var eventHandler: EventHandlerRef?
     private var hotkeyRef: EventHotKeyRef?
     private var currentHotkey: String = ""
+    private var notificationObserver: NSObjectProtocol?
     
     var onHotkeyPressed: (() -> Void)?
     
@@ -27,6 +28,8 @@ class HotkeyService {
         currentHotkey = hotkey
         
         let (keyCode, modifiers) = parseHotkey(hotkey)
+        
+        print("⚡️ [HotkeyService] Registering hotkey: \(hotkey), keyCode: \(keyCode), modifiers: \(modifiers)")
         
         var hotKeyID = EventHotKeyID()
         hotKeyID.signature = fourCharCode("PSTE")
@@ -49,7 +52,7 @@ class HotkeyService {
         )
         
         guard status == noErr else {
-            print("Failed to install event handler")
+            print("⚡️ [HotkeyService] Failed to install event handler: \(status)")
             return
         }
         
@@ -63,20 +66,23 @@ class HotkeyService {
         )
         
         if registerStatus == noErr {
-            // 监听通知
-            NotificationCenter.default.addObserver(
+            print("⚡️ [HotkeyService] Hotkey registered successfully")
+            // 监听通知 - 保存 observer 引用以便正确移除
+            notificationObserver = NotificationCenter.default.addObserver(
                 forName: .globalHotkeyPressed,
                 object: nil,
                 queue: .main
             ) { [weak self] _ in
+                print("⚡️ [HotkeyService] Hotkey pressed notification received")
                 self?.onHotkeyPressed?()
             }
         } else {
-            print("Failed to register hotkey: \(registerStatus)")
+            print("⚡️ [HotkeyService] Failed to register hotkey: \(registerStatus)")
         }
     }
     
     func unregister() {
+        print("⚡️ [HotkeyService] Unregistering hotkey")
         if let hotkeyRef = hotkeyRef {
             UnregisterEventHotKey(hotkeyRef)
             self.hotkeyRef = nil
@@ -85,7 +91,11 @@ class HotkeyService {
             RemoveEventHandler(eventHandler)
             self.eventHandler = nil
         }
-        NotificationCenter.default.removeObserver(self, name: .globalHotkeyPressed, object: nil)
+        // 正确移除闭包方式添加的 observer
+        if let observer = notificationObserver {
+            NotificationCenter.default.removeObserver(observer)
+            notificationObserver = nil
+        }
     }
     
     // MARK: - Parse Hotkey String
