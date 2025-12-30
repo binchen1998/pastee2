@@ -16,7 +16,7 @@ struct SearchView: View {
     @State private var showToast = false
     @State private var currentPage = 1
     @State private var hasMore = false
-    @FocusState private var isSearchFieldFocused: Bool
+    @State private var shouldFocusSearchField = false
     
     let onSelect: (ClipboardEntry) -> Void
     
@@ -49,14 +49,15 @@ struct SearchView: View {
                 
                 // 搜索输入框
                 HStack {
-                    TextField("Type and press Enter to search...", text: $searchText)
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 14))
-                        .foregroundColor(Theme.textPrimary)
-                        .focused($isSearchFieldFocused)
-                        .onSubmit {
+                    FocusableTextField(
+                        text: $searchText,
+                        placeholder: "Type and press Enter to search...",
+                        shouldFocus: $shouldFocusSearchField,
+                        onSubmit: {
                             Task { await search() }
                         }
+                    )
+                    .frame(height: 20)
                     
                     if !searchText.isEmpty {
                         Button(action: {
@@ -158,8 +159,8 @@ struct SearchView: View {
         .shadow(color: .black.opacity(0.5), radius: 20)
         .onAppear {
             // 延迟一点设置焦点，确保视图已完全加载
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                isSearchFieldFocused = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                shouldFocusSearchField = true
             }
         }
     }
@@ -313,6 +314,70 @@ struct SearchResultCard: View {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
+    }
+}
+
+// MARK: - FocusableTextField
+
+struct FocusableTextField: NSViewRepresentable {
+    @Binding var text: String
+    var placeholder: String
+    @Binding var shouldFocus: Bool
+    var onSubmit: () -> Void
+    
+    func makeNSView(context: Context) -> NSTextField {
+        let textField = NSTextField()
+        textField.placeholderString = placeholder
+        textField.isBordered = false
+        textField.drawsBackground = false
+        textField.focusRingType = .none
+        textField.font = .systemFont(ofSize: 14)
+        textField.textColor = NSColor(Theme.textPrimary)
+        textField.delegate = context.coordinator
+        return textField
+    }
+    
+    func updateNSView(_ nsView: NSTextField, context: Context) {
+        if nsView.stringValue != text {
+            nsView.stringValue = text
+        }
+        
+        // 当 shouldFocus 变为 true 时，让窗口成为 key 并聚焦到输入框
+        if shouldFocus {
+            DispatchQueue.main.async {
+                if let window = nsView.window {
+                    window.makeKey()
+                    window.makeFirstResponder(nsView)
+                }
+                shouldFocus = false
+            }
+        }
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, NSTextFieldDelegate {
+        var parent: FocusableTextField
+        
+        init(_ parent: FocusableTextField) {
+            self.parent = parent
+        }
+        
+        func controlTextDidChange(_ obj: Notification) {
+            if let textField = obj.object as? NSTextField {
+                parent.text = textField.stringValue
+            }
+        }
+        
+        func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+            if commandSelector == #selector(NSResponder.insertNewline(_:)) {
+                parent.onSubmit()
+                return true
+            }
+            return false
+        }
     }
 }
 
