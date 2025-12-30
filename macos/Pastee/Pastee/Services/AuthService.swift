@@ -22,6 +22,7 @@ class AuthService {
     
     private var tokenFile: URL { pasteeDir.appendingPathComponent("auth.token") }
     private var deviceIdFile: URL { pasteeDir.appendingPathComponent("device.id") }
+    private var emailFile: URL { pasteeDir.appendingPathComponent("user.email") }
     
     private var cachedUserInfo: UserInfo?
     
@@ -43,7 +44,18 @@ class AuthService {
     
     func logout() {
         try? FileManager.default.removeItem(at: tokenFile)
+        try? FileManager.default.removeItem(at: emailFile)
         cachedUserInfo = nil
+    }
+    
+    // MARK: - Email Storage
+    
+    func saveEmail(_ email: String) {
+        try? email.write(to: emailFile, atomically: true, encoding: .utf8)
+    }
+    
+    func getSavedEmail() -> String? {
+        try? String(contentsOf: emailFile, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
     // MARK: - Device ID
@@ -78,6 +90,7 @@ class AuthService {
         if httpResponse.statusCode == 200 {
             let loginResponse = try JSONDecoder().decode(LoginResponse.self, from: data)
             saveToken(loginResponse.accessToken)
+            saveEmail(email)  // 保存 email 到本地
             return AuthResult(success: true, token: loginResponse.accessToken, email: email, errorMessage: nil)
         } else if httpResponse.statusCode == 401 {
             return AuthResult(success: false, token: nil, email: nil, errorMessage: "Incorrect email or password")
