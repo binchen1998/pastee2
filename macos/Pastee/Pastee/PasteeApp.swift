@@ -248,9 +248,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.searchWindow?.close()
             }
             
+            // 使用 .titled 样式但隐藏标题栏，这样可以接受键盘输入
             searchWindow = NSPanel(
                 contentRect: NSRect(x: 0, y: 0, width: 480, height: 500),
-                styleMask: [.borderless, .nonactivatingPanel, .utilityWindow],
+                styleMask: [.borderless, .utilityWindow],
                 backing: .buffered,
                 defer: false
             )
@@ -260,6 +261,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             searchWindow?.hasShadow = true
             searchWindow?.level = .floating
             searchWindow?.center()
+            // 允许成为 key window 以接收键盘输入
+            searchWindow?.becomesKeyOnlyIfNeeded = false
             let hostingView = NSHostingView(rootView: searchView)
             hostingView.wantsLayer = true
             hostingView.layer?.backgroundColor = .clear

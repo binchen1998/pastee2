@@ -16,6 +16,7 @@ struct SearchView: View {
     @State private var showToast = false
     @State private var currentPage = 1
     @State private var hasMore = false
+    @FocusState private var isSearchFieldFocused: Bool
     
     let onSelect: (ClipboardEntry) -> Void
     
@@ -52,6 +53,7 @@ struct SearchView: View {
                         .textFieldStyle(.plain)
                         .font(.system(size: 14))
                         .foregroundColor(Theme.textPrimary)
+                        .focused($isSearchFieldFocused)
                         .onSubmit {
                             Task { await search() }
                         }
@@ -154,6 +156,12 @@ struct SearchView: View {
                 .stroke(Theme.border, lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.5), radius: 20)
+        .onAppear {
+            // 延迟一点设置焦点，确保视图已完全加载
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                isSearchFieldFocused = true
+            }
+        }
     }
     
     // MARK: - Actions
