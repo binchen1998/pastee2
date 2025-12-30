@@ -50,6 +50,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             andEventID: AEEventID(kAEGetURL)
         )
         
+        // 注册通知监听
+        setupNotifications()
+        
         // 检查登录状态
         if authService.isLoggedIn {
             // 已登录，启动应用
@@ -58,6 +61,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             // 未登录，显示登录窗口
             showLoginWindow()
         }
+    }
+    
+    private func setupNotifications() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(showSettings),
+            name: .showSettingsWindow,
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(showSearch),
+            name: .showSearchWindow,
+            object: nil
+        )
     }
     
     func applicationWillTerminate(_ notification: Notification) {
@@ -377,6 +396,8 @@ extension Notification.Name {
     static let clipboardChanged = Notification.Name("clipboardChanged")
     static let webSocketMessage = Notification.Name("webSocketMessage")
     static let pasteToFocusedApp = Notification.Name("pasteToFocusedApp")
+    static let showSettingsWindow = Notification.Name("showSettingsWindow")
+    static let showSearchWindow = Notification.Name("showSearchWindow")
 }
 
 // MARK: - 单实例管理器

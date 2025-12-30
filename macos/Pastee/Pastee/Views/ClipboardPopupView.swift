@@ -103,9 +103,8 @@ struct ClipboardPopupView: View {
                 }
                 
                 NavButton(title: "Settings", isSelected: false) {
-                    if let appDelegate = NSApp.delegate as? AppDelegate {
-                        appDelegate.showSettings()
-                    }
+                    // 使用 NotificationCenter 通知打开设置
+                    NotificationCenter.default.post(name: .showSettingsWindow, object: nil)
                 }
                 
                 if viewModel.draftCount > 0 {
@@ -248,9 +247,7 @@ struct ClipboardPopupView: View {
                 }
                 
                 Button(action: {
-                    if let appDelegate = NSApp.delegate as? AppDelegate {
-                        appDelegate.showSearch()
-                    }
+                    NotificationCenter.default.post(name: .showSearchWindow, object: nil)
                 }) {
                     Text("🔍")
                         .font(.system(size: 15))
