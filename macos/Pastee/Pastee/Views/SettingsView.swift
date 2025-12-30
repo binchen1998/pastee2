@@ -334,18 +334,10 @@ struct SettingsView: View {
                 currentHotkey: currentHotkey,
                 onSave: { newHotkey in
                     self.currentHotkey = newHotkey
-                    // Hotkey 关闭后重新打开 Settings
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        NotificationCenter.default.post(name: .showSettingsWindow, object: nil)
-                    }
                 },
                 onDismiss: {
                     NSApp.stopModal()
                     hotkeyWindow?.close()
-                    // Hotkey 关闭后重新打开 Settings
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        NotificationCenter.default.post(name: .showSettingsWindow, object: nil)
-                    }
                 }
             )
             
