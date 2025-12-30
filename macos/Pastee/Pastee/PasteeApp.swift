@@ -248,8 +248,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.searchWindow?.close()
             }
             
-            // 使用 .titled 样式但隐藏标题栏，这样可以接受键盘输入
-            searchWindow = NSPanel(
+            // 使用自定义 KeyablePanel 以支持键盘输入
+            searchWindow = KeyablePanel(
                 contentRect: NSRect(x: 0, y: 0, width: 480, height: 500),
                 styleMask: [.borderless, .utilityWindow],
                 backing: .buffered,
@@ -261,8 +261,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             searchWindow?.hasShadow = true
             searchWindow?.level = .floating
             searchWindow?.center()
-            // 允许成为 key window 以接收键盘输入
-            searchWindow?.becomesKeyOnlyIfNeeded = false
             let hostingView = NSHostingView(rootView: searchView)
             hostingView.wantsLayer = true
             hostingView.layer?.backgroundColor = .clear
@@ -401,6 +399,18 @@ extension Notification.Name {
     static let pasteToFocusedApp = Notification.Name("pasteToFocusedApp")
     static let showSettingsWindow = Notification.Name("showSettingsWindow")
     static let showSearchWindow = Notification.Name("showSearchWindow")
+}
+
+// MARK: - KeyablePanel
+// 自定义 NSPanel 子类，允许 borderless 窗口接收键盘输入
+class KeyablePanel: NSPanel {
+    override var canBecomeKey: Bool {
+        return true
+    }
+    
+    override var canBecomeMain: Bool {
+        return true
+    }
 }
 
 // MARK: - 单实例管理器
