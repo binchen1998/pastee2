@@ -244,12 +244,13 @@ class APIService {
         return nil
     }
     
-    func searchItems(query: String, page: Int = 1, pageSize: Int = 50) async throws -> ClipboardListResponse {
-        var components = URLComponents(string: "\(baseURL)/clipboard/items/search")!
+    func searchItems(query: String, page: Int = 1, pageSize: Int = 20) async throws -> ClipboardListResponse {
+        // 使用与 Windows 版本相同的接口: /clipboard/items?search=xxx
+        var components = URLComponents(string: "\(baseURL)/clipboard/items")!
         components.queryItems = [
-            URLQueryItem(name: "q", value: query),
             URLQueryItem(name: "page", value: String(page)),
-            URLQueryItem(name: "page_size", value: String(pageSize))
+            URLQueryItem(name: "page_size", value: String(pageSize)),
+            URLQueryItem(name: "search", value: query)
         ]
         
         let request = createRequest(url: components.url!, method: "GET")

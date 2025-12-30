@@ -176,28 +176,13 @@ struct SettingsView: View {
                         sectionHeader("About")
                         
                         infoCard {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Pastee")
-                                        .font(.system(size: 11))
-                                        .foregroundColor(Theme.textSecondary)
-                                    Text("Version \(version)")
-                                        .font(.system(size: 15, weight: .medium))
-                                        .foregroundColor(Theme.textPrimary)
-                                }
-                                
-                                Spacer()
-                                
-                                Button(action: { checkUpdates() }) {
-                                    HStack(spacing: 6) {
-                                        Text("📥")
-                                            .font(.system(size: 12))
-                                        Text("Check Updates")
-                                            .font(.system(size: 13))
-                                    }
-                                    .foregroundColor(Theme.accent)
-                                }
-                                .buttonStyle(.plain)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Pastee")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(Theme.textSecondary)
+                                Text("Version \(version)")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(Theme.textPrimary)
                             }
                         }
                         
@@ -360,12 +345,6 @@ struct SettingsView: View {
         settings.launchAtLogin = autoStart
         settings.hideAfterPaste = hideAfterPaste
         SettingsManager.shared.save(settings)
-    }
-    
-    private func checkUpdates() {
-        Task {
-            await UpdateService.shared.checkForUpdate()
-        }
     }
     
     private func openSupportEmail() {
