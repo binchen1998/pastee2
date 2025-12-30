@@ -74,43 +74,46 @@ struct ClipboardPopupView: View {
     private func showEditWindow(for item: ClipboardEntry) {
         guard item.contentType != "image" else { return }
         
-        // 创建模态窗口
-        let modalWindow = KeyablePanel(
-            contentRect: NSRect(x: 0, y: 0, width: 480, height: 350),
-            styleMask: [.borderless, .utilityWindow],
-            backing: .buffered,
-            defer: false
-        )
-        modalWindow.isMovableByWindowBackground = true
-        modalWindow.backgroundColor = .clear
-        modalWindow.isOpaque = false
-        modalWindow.hasShadow = true
-        modalWindow.level = .modalPanel
-        modalWindow.center()
-        
-        let editView = EditTextSheet(
-            content: item.content ?? "",
-            onSave: { [weak modalWindow] newContent in
-                Task {
-                    await viewModel.updateItemContent(item, newContent: newContent)
+        // 异步调用以避免在 SwiftUI 事务中运行模态
+        DispatchQueue.main.async {
+            // 创建模态窗口
+            let modalWindow = KeyablePanel(
+                contentRect: NSRect(x: 0, y: 0, width: 480, height: 350),
+                styleMask: [.borderless, .utilityWindow],
+                backing: .buffered,
+                defer: false
+            )
+            modalWindow.isMovableByWindowBackground = true
+            modalWindow.backgroundColor = .clear
+            modalWindow.isOpaque = false
+            modalWindow.hasShadow = true
+            modalWindow.level = .modalPanel
+            modalWindow.center()
+            
+            let editView = EditTextSheet(
+                content: item.content ?? "",
+                onSave: { [weak modalWindow] newContent in
+                    NSApp.stopModal()
+                    modalWindow?.close()
+                    Task {
+                        await self.viewModel.updateItemContent(item, newContent: newContent)
+                    }
+                },
+                onCancel: { [weak modalWindow] in
+                    NSApp.stopModal()
+                    modalWindow?.close()
                 }
-                NSApp.stopModal()
-                modalWindow?.close()
-            },
-            onCancel: { [weak modalWindow] in
-                NSApp.stopModal()
-                modalWindow?.close()
-            }
-        )
-        
-        let hostingView = NSHostingView(rootView: editView)
-        hostingView.wantsLayer = true
-        hostingView.layer?.backgroundColor = .clear
-        modalWindow.contentView = hostingView
-        
-        // 运行模态
-        NSApp.activate(ignoringOtherApps: true)
-        NSApp.runModal(for: modalWindow)
+            )
+            
+            let hostingView = NSHostingView(rootView: editView)
+            hostingView.wantsLayer = true
+            hostingView.layer?.backgroundColor = .clear
+            modalWindow.contentView = hostingView
+            
+            // 运行模态
+            NSApp.activate(ignoringOtherApps: true)
+            NSApp.runModal(for: modalWindow)
+        }
     }
     
     private func viewImageItem(_ item: ClipboardEntry) {
