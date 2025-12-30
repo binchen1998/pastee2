@@ -159,8 +159,8 @@ struct SearchView: View {
         )
         .shadow(color: .black.opacity(0.5), radius: 20)
         .onAppear {
-            // 延迟一点设置焦点，确保视图已完全加载
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            // Modal 窗口需要更长的延迟来确保完全准备好
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 shouldFocusSearchField = true
             }
         }
@@ -355,19 +355,26 @@ struct FocusableTextField: NSViewRepresentable {
         
         // 当 shouldFocus 变为 true 时，让窗口成为 key 并聚焦到输入框
         if shouldFocus {
+            shouldFocus = false  // 先重置，避免重复触发
+            
             // 使用更长的延迟确保 modal 窗口完全准备好
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                if let window = nsView.window {
-                    window.makeKey()
-                    window.makeFirstResponder(nsView)
-                    
-                    // 设置光标颜色
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                guard let window = nsView.window else { return }
+                
+                // 确保窗口是 key window
+                window.makeKey()
+                
+                // 聚焦到输入框
+                let success = window.makeFirstResponder(nsView)
+                print("⚡️ [FocusableTextField] makeFirstResponder: \(success)")
+                
+                // 设置光标颜色 - 需要在成为 firstResponder 后设置
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                     if let fieldEditor = window.fieldEditor(true, for: nsView) as? NSTextView {
                         fieldEditor.insertionPointColor = NSColor(Theme.textPrimary)
                     }
                 }
             }
-            shouldFocus = false
         }
     }
     
