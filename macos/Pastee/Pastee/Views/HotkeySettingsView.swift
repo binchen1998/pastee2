@@ -168,6 +168,8 @@ class HotkeyRecorderNSView: NSView {
     
     private var trackingArea: NSTrackingArea?
     private var isHovering = false
+    private var eventTap: CFMachPort?
+    private var runLoopSource: CFRunLoopSource?
     
     override var acceptsFirstResponder: Bool { true }
     
@@ -179,6 +181,10 @@ class HotkeyRecorderNSView: NSView {
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         setupView()
+    }
+    
+    deinit {
+        stopEventTap()
     }
     
     private func setupView() {
@@ -211,18 +217,122 @@ class HotkeyRecorderNSView: NSView {
     
     override func mouseDown(with event: NSEvent) {
         window?.makeFirstResponder(self)
+        startRecording()
+    }
+    
+    private func startRecording() {
         isRecording = true
         onRecordingStateChanged?(true)
         needsDisplay = true
+        
+        // 启动底层事件监听
+        startEventTap()
+    }
+    
+    private func stopRecording() {
+        isRecording = false
+        onRecordingStateChanged?(false)
+        needsDisplay = true
+        
+        // 停止底层事件监听
+        stopEventTap()
+    }
+    
+    // MARK: - CGEvent Tap (底层按键监听)
+    
+    private func startEventTap() {
+        // 先停止之前的
+        stopEventTap()
+        
+        // 创建事件 tap - 监听所有键盘事件
+        let eventMask = (1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.flagsChanged.rawValue)
+        
+        // 使用 Unmanaged 来传递 self
+        let refcon = Unmanaged.passUnretained(self).toOpaque()
+        
+        guard let tap = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: .listenOnly,  // 只监听，不拦截
+            eventsOfInterest: CGEventMask(eventMask),
+            callback: { (proxy, type, event, refcon) -> Unmanaged<CGEvent>? in
+                guard let refcon = refcon else { return Unmanaged.passRetained(event) }
+                let recorder = Unmanaged<HotkeyRecorderNSView>.fromOpaque(refcon).takeUnretainedValue()
+                
+                if type == .keyDown {
+                    recorder.handleKeyEvent(event)
+                }
+                
+                return Unmanaged.passRetained(event)
+            },
+            userInfo: refcon
+        ) else {
+            print("⚡️ [HotkeyRecorder] Failed to create event tap - need Accessibility permission")
+            return
+        }
+        
+        eventTap = tap
+        runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+        
+        if let source = runLoopSource {
+            CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)
+            CGEvent.tapEnable(tap: tap, enable: true)
+            print("⚡️ [HotkeyRecorder] Event tap started")
+        }
+    }
+    
+    private func stopEventTap() {
+        if let tap = eventTap {
+            CGEvent.tapEnable(tap: tap, enable: false)
+        }
+        if let source = runLoopSource {
+            CFRunLoopRemoveSource(CFRunLoopGetCurrent(), source, .commonModes)
+        }
+        eventTap = nil
+        runLoopSource = nil
+    }
+    
+    private func handleKeyEvent(_ event: CGEvent) {
+        guard isRecording else { return }
+        
+        let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+        let flags = event.flags
+        
+        // 需要至少一个修饰键
+        let hasModifier = flags.contains(.maskCommand) ||
+                          flags.contains(.maskControl) ||
+                          flags.contains(.maskAlternate) ||
+                          flags.contains(.maskShift)
+        
+        guard hasModifier else { return }
+        
+        // 构建快捷键字符串
+        var parts: [String] = []
+        if flags.contains(.maskCommand) { parts.append("Command") }
+        if flags.contains(.maskControl) { parts.append("Control") }
+        if flags.contains(.maskAlternate) { parts.append("Option") }
+        if flags.contains(.maskShift) { parts.append("Shift") }
+        
+        if let keyName = keyCodeToName(UInt16(keyCode)) {
+            parts.append(keyName)
+        }
+        
+        let hotkeyString = parts.joined(separator: " + ")
+        
+        // 在主线程更新 UI
+        DispatchQueue.main.async { [weak self] in
+            self?.stopRecording()
+            self?.onHotkeyRecorded?(hotkeyString)
+        }
     }
     
     override func keyDown(with event: NSEvent) {
+        // 保留作为备用方案
         guard isRecording else { return }
         
         let modifiers = event.modifierFlags
         let keyCode = event.keyCode
         
-        // 需要至少一个修饰键
         let hasModifier = modifiers.contains(.command) || 
                           modifiers.contains(.control) || 
                           modifiers.contains(.option) ||
@@ -230,7 +340,6 @@ class HotkeyRecorderNSView: NSView {
         
         guard hasModifier else { return }
         
-        // 构建快捷键字符串
         var parts: [String] = []
         if modifiers.contains(.command) { parts.append("Command") }
         if modifiers.contains(.control) { parts.append("Control") }
@@ -243,14 +352,11 @@ class HotkeyRecorderNSView: NSView {
         
         let hotkeyString = parts.joined(separator: " + ")
         
-        isRecording = false
-        onRecordingStateChanged?(false)
+        stopRecording()
         onHotkeyRecorded?(hotkeyString)
-        needsDisplay = true
     }
     
     override func flagsChanged(with event: NSEvent) {
-        // 当修饰键改变时刷新显示
         if isRecording {
             needsDisplay = true
         }
