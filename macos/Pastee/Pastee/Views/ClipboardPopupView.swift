@@ -430,16 +430,17 @@ struct CategoryRow: View {
             }
             .buttonStyle(.plain)
             
-            if isHovering {
-                Button(action: onDelete) {
-                    Text("×")
-                        .font(.system(size: 18))
-                        .foregroundColor(Theme.delete)
-                }
-                .buttonStyle(.plain)
+            // 始终占位，用 opacity 控制显隐，避免 hover 时消失
+            Button(action: onDelete) {
+                Text("×")
+                    .font(.system(size: 18))
+                    .foregroundColor(Theme.delete)
             }
+            .buttonStyle(.plain)
+            .opacity(isHovering ? 1 : 0)
         }
         .padding(.vertical, 6)
+        .contentShape(Rectangle()) // 确保整个区域可以检测 hover
         .onHover { hovering in
             isHovering = hovering
         }
