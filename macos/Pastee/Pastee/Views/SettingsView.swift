@@ -321,6 +321,9 @@ struct SettingsView: View {
     private func openHotkeySettings() {
         // 使用 DispatchQueue 避免在 SwiftUI 更新中调用
         DispatchQueue.main.async { [self] in
+            // 保存对 hotkey 窗口的引用
+            var hotkeyWindow: NSPanel?
+            
             let hotkeyView = HotkeySettingsView(
                 currentHotkey: currentHotkey,
                 onSave: { newHotkey in
@@ -328,13 +331,13 @@ struct SettingsView: View {
                 },
                 onDismiss: {
                     NSApp.stopModal()
-                    NSApp.keyWindow?.close()
+                    hotkeyWindow?.close()
                 }
             )
             
             // 使用自定义 Panel 类让窗口可以接收键盘输入
             let panel = KeyablePanel(
-                contentRect: NSRect(x: 0, y: 0, width: 420, height: 280),
+                contentRect: NSRect(x: 0, y: 0, width: 450, height: 320),
                 styleMask: [.borderless, .utilityWindow],
                 backing: .buffered,
                 defer: false
@@ -343,7 +346,8 @@ struct SettingsView: View {
             panel.backgroundColor = .clear
             panel.isOpaque = false
             panel.hasShadow = true
-            panel.level = .modalPanel
+            // 使用更高的层级确保显示在最前面
+            panel.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.maximumWindow)))
             panel.center()
             panel.isReleasedWhenClosed = false
             
@@ -352,8 +356,11 @@ struct SettingsView: View {
             hostingView.layer?.backgroundColor = .clear
             panel.contentView = hostingView
             
+            hotkeyWindow = panel
+            
             // 先显示并激活
-            panel.makeKeyAndOrderFront(nil)
+            panel.orderFrontRegardless()
+            panel.makeKey()
             NSApp.activate(ignoringOtherApps: true)
             
             // 运行 modal
