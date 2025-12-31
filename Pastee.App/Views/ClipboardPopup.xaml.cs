@@ -59,18 +59,23 @@ namespace Pastee.App.Views
         private void OnToggleSidebarClick(object sender, RoutedEventArgs e)
         {
             _sidebarVisible = !_sidebarVisible;
-            ApplySidebarState();
+            ApplySidebarStateWithResize();
             
-            // 保存设置
+            // 保存设置（保存调整后的窗口宽度）
             var dataStore = new LocalDataStore();
             _ = dataStore.SaveWindowSettingsAsync(this.Width, this.Height, _viewModel.CurrentHotkey, null, _sidebarVisible);
         }
 
-        private void ApplySidebarState()
+        private const double SidebarWidth = 140;
+
+        /// <summary>
+        /// 只设置侧边栏的视觉状态，不改变窗口宽度（用于初始化）
+        /// </summary>
+        private void ApplySidebarVisual()
         {
             if (_sidebarVisible)
             {
-                SidebarColumn.Width = new GridLength(140);
+                SidebarColumn.Width = new GridLength(SidebarWidth);
                 SidebarBorder.Visibility = Visibility.Visible;
                 ToggleSidebarButton.Content = "◀";
                 ToggleSidebarButton.ToolTip = "Hide Sidebar";
@@ -81,6 +86,31 @@ namespace Pastee.App.Views
                 SidebarBorder.Visibility = Visibility.Collapsed;
                 ToggleSidebarButton.Content = "▶";
                 ToggleSidebarButton.ToolTip = "Show Sidebar";
+            }
+        }
+
+        /// <summary>
+        /// 切换侧边栏状态并调整窗口宽度
+        /// </summary>
+        private void ApplySidebarStateWithResize()
+        {
+            if (_sidebarVisible)
+            {
+                // 显示侧边栏，扩大窗口
+                this.Width += SidebarWidth;
+                SidebarColumn.Width = new GridLength(SidebarWidth);
+                SidebarBorder.Visibility = Visibility.Visible;
+                ToggleSidebarButton.Content = "◀";
+                ToggleSidebarButton.ToolTip = "Hide Sidebar";
+            }
+            else
+            {
+                // 隐藏侧边栏，缩小窗口
+                SidebarColumn.Width = new GridLength(0);
+                SidebarBorder.Visibility = Visibility.Collapsed;
+                ToggleSidebarButton.Content = "▶";
+                ToggleSidebarButton.ToolTip = "Show Sidebar";
+                this.Width -= SidebarWidth;
             }
         }
 
@@ -140,7 +170,8 @@ namespace Pastee.App.Views
                 this.Height = settings.Height;
                 _viewModel.CurrentHotkey = settings.Hotkey;
                 _sidebarVisible = settings.SidebarVisible;
-                ApplySidebarState();
+                // 初始化时不改变窗口宽度，只设置侧边栏状态
+                ApplySidebarVisual();
             }
         }
 
