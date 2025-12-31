@@ -373,6 +373,13 @@ CategoryRow(
         VStack(spacing: 0) {
             // 顶部操作栏
             HStack {
+                // Pastee Logo (visible when sidebar is hidden)
+                if !sidebarVisible {
+                    Text("Pastee")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(Theme.accent)
+                }
+                
                 Spacer()
                 
                 if viewModel.selectedCategory == "drafts" {

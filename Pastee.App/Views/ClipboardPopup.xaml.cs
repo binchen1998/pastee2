@@ -79,6 +79,7 @@ namespace Pastee.App.Views
                 SidebarBorder.Visibility = Visibility.Visible;
                 ToggleSidebarButton.Content = "◀";
                 ToggleSidebarButton.ToolTip = "Hide Sidebar";
+                MainPasteeLogo.Visibility = Visibility.Collapsed;
             }
             else
             {
@@ -86,6 +87,7 @@ namespace Pastee.App.Views
                 SidebarBorder.Visibility = Visibility.Collapsed;
                 ToggleSidebarButton.Content = "▶";
                 ToggleSidebarButton.ToolTip = "Show Sidebar";
+                MainPasteeLogo.Visibility = Visibility.Visible;
             }
         }
 
@@ -102,6 +104,7 @@ namespace Pastee.App.Views
                 SidebarBorder.Visibility = Visibility.Visible;
                 ToggleSidebarButton.Content = "◀";
                 ToggleSidebarButton.ToolTip = "Hide Sidebar";
+                MainPasteeLogo.Visibility = Visibility.Collapsed;
             }
             else
             {
@@ -110,6 +113,7 @@ namespace Pastee.App.Views
                 SidebarBorder.Visibility = Visibility.Collapsed;
                 ToggleSidebarButton.Content = "▶";
                 ToggleSidebarButton.ToolTip = "Show Sidebar";
+                MainPasteeLogo.Visibility = Visibility.Visible;
                 this.Width -= SidebarWidth;
             }
         }

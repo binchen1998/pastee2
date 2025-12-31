@@ -423,6 +423,18 @@
                 <Border Background="Transparent" Height="40" VerticalAlignment="Top" 
                         MouseLeftButtonDown="OnHeaderMouseDown" Cursor="SizeAll"/>
                 
+                <!-- Pastee Logo (visible when sidebar is hidden) -->
+                <TextBlock x:Name="MainPasteeLogo"
+                           Text="Pastee"
+                           Foreground="{StaticResource AccentBrush}"
+                           FontSize="20"
+                           FontWeight="Bold"
+                           FontFamily="{StaticResource MainFont}"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Top"
+                           Margin="0,6,0,0"
+                           Visibility="Collapsed"/>
+                
                 <!-- Top Right Actions: Clear Drafts, Search, Refresh, Close -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" 
                             Margin="0,0,0,0" Panel.ZIndex="10">
