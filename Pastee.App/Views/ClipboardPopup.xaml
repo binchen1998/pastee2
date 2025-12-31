@@ -235,12 +235,12 @@
         </Border.Effect>
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="140"/>
+                <ColumnDefinition x:Name="SidebarColumn" Width="140"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
             <!-- Sidebar -->
-            <Border Background="{StaticResource BackgroundBrush}" Padding="12,16" CornerRadius="12,0,0,12">
+            <Border x:Name="SidebarBorder" Background="{StaticResource BackgroundBrush}" Padding="12,16" CornerRadius="12,0,0,12">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -441,6 +441,15 @@
                             Click="OnClearDraftsClick"
                             ToolTip="Clear all drafts"
                             Visibility="Collapsed"/>
+                    
+                    <!-- Toggle Sidebar Button -->
+                    <Button x:Name="ToggleSidebarButton"
+                            Style="{StaticResource IconButtonStyle}"
+                            Content="◀" 
+                            FontSize="12"
+                            Width="32" Height="32"
+                            Click="OnToggleSidebarClick"
+                            ToolTip="Toggle Sidebar"/>
                     
                     <!-- Settings Button -->
                     <Button Style="{StaticResource IconButtonStyle}"

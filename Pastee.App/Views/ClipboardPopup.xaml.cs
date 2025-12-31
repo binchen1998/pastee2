@@ -23,6 +23,7 @@ namespace Pastee.App.Views
         private ClipboardEntry? _draggedItem;
         private bool _isDragging;
         private bool _isShowing;
+        private bool _sidebarVisible = true;
 
         public ClipboardPopup(MainViewModel viewModel)
         {
@@ -53,6 +54,34 @@ namespace Pastee.App.Views
             {
                 ItemsScrollViewer.ScrollToTop();
             }));
+        }
+
+        private void OnToggleSidebarClick(object sender, RoutedEventArgs e)
+        {
+            _sidebarVisible = !_sidebarVisible;
+            ApplySidebarState();
+            
+            // 保存设置
+            var dataStore = new LocalDataStore();
+            _ = dataStore.SaveWindowSettingsAsync(this.Width, this.Height, _viewModel.CurrentHotkey, null, _sidebarVisible);
+        }
+
+        private void ApplySidebarState()
+        {
+            if (_sidebarVisible)
+            {
+                SidebarColumn.Width = new GridLength(140);
+                SidebarBorder.Visibility = Visibility.Visible;
+                ToggleSidebarButton.Content = "◀";
+                ToggleSidebarButton.ToolTip = "Hide Sidebar";
+            }
+            else
+            {
+                SidebarColumn.Width = new GridLength(0);
+                SidebarBorder.Visibility = Visibility.Collapsed;
+                ToggleSidebarButton.Content = "▶";
+                ToggleSidebarButton.ToolTip = "Show Sidebar";
+            }
         }
 
         private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -110,6 +139,8 @@ namespace Pastee.App.Views
                 this.Width = settings.Width;
                 this.Height = settings.Height;
                 _viewModel.CurrentHotkey = settings.Hotkey;
+                _sidebarVisible = settings.SidebarVisible;
+                ApplySidebarState();
             }
         }
 
