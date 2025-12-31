@@ -474,6 +474,7 @@ extension Notification.Name {
     static let showSearchWindow = Notification.Name("showSearchWindow")
     static let uploadCompleted = Notification.Name("uploadCompleted")
     static let uploadFailed = Notification.Name("uploadFailed")
+    static let adjustWindowWidth = Notification.Name("adjustWindowWidth")
 }
 
 // MARK: - KeyablePanel

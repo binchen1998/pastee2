@@ -12,12 +12,14 @@ struct AppSettings: Codable {
     var hideAfterPaste: Bool = true
     var launchAtLogin: Bool = false
     var darkMode: Bool = true
+    var sidebarVisible: Bool = true
     
     enum CodingKeys: String, CodingKey {
         case hotkey
         case hideAfterPaste = "hide_after_paste"
         case launchAtLogin = "launch_at_login"
         case darkMode = "dark_mode"
+        case sidebarVisible = "sidebar_visible"
     }
 }
 

@@ -82,6 +82,14 @@ class PopupWindow: NSPanel {
             object: nil
         )
         print("⚡️ [PopupWindow] Notification observer registered for pasteToFocusedApp")
+        
+        // 监听窗口宽度调整通知
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAdjustWindowWidth),
+            name: .adjustWindowWidth,
+            object: nil
+        )
     }
     
     deinit {
@@ -91,6 +99,28 @@ class PopupWindow: NSPanel {
     @objc private func handlePasteNotification() {
         print("⚡️ [PopupWindow] Received paste notification!")
         pasteToFocusedApp()
+    }
+    
+    @objc private func handleAdjustWindowWidth(_ notification: Notification) {
+        guard let widthDelta = notification.object as? CGFloat else { return }
+        
+        var newFrame = self.frame
+        newFrame.size.width += widthDelta
+        
+        // 确保不小于最小宽度
+        let minWidth = self.minSize.width
+        if newFrame.size.width < minWidth {
+            newFrame.size.width = minWidth
+        }
+        
+        // 使用动画调整窗口大小
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.2
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            self.animator().setFrame(newFrame, display: true)
+        }
+        
+        print("⚡️ [PopupWindow] Adjusted window width by \(widthDelta), new width: \(newFrame.size.width)")
     }
     
     private func positionNearCorner() {

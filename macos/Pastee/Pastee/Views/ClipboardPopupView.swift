@@ -21,6 +21,10 @@ struct ClipboardPopupView: View {
     @State private var showDeleteCategoryConfirm = false
     @State private var categoryToDelete: Category?
     
+    // 侧边栏状态
+    @State private var sidebarVisible: Bool = true
+    private let sidebarWidth: CGFloat = 140
+    
     let onClose: () -> Void
     
     var body: some View {
@@ -28,8 +32,10 @@ struct ClipboardPopupView: View {
             // 主内容
             HStack(spacing: 0) {
                 // 侧边栏
-                sidebarView
-                    .frame(width: 140)
+                if sidebarVisible {
+                    sidebarView
+                        .frame(width: sidebarWidth)
+                }
                 
                 // 主内容区
                 mainContentView
@@ -60,6 +66,10 @@ struct ClipboardPopupView: View {
             }
         }
         .onAppear {
+            // 加载保存的侧边栏状态
+            let settings = SettingsManager.shared.load()
+            sidebarVisible = settings.sidebarVisible
+            
             Task {
                 await viewModel.loadData()
             }
@@ -73,6 +83,21 @@ struct ClipboardPopupView: View {
     }
     
     // MARK: - Helper Functions
+    
+    private func toggleSidebar() {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            sidebarVisible.toggle()
+        }
+        
+        // 保存设置
+        var settings = SettingsManager.shared.load()
+        settings.sidebarVisible = sidebarVisible
+        SettingsManager.shared.save(settings)
+        
+        // 通知窗口调整大小
+        let widthDelta = sidebarVisible ? sidebarWidth : -sidebarWidth
+        NotificationCenter.default.post(name: .adjustWindowWidth, object: widthDelta)
+    }
     
     private func showEditWindow(for item: ClipboardEntry) {
         guard item.contentType != "image" else { return }
@@ -365,6 +390,15 @@ CategoryRow(
                     }
                     .buttonStyle(.plain)
                 }
+                
+                // Toggle Sidebar Button
+                Button(action: { toggleSidebar() }) {
+                    Text(sidebarVisible ? "◀" : "▶")
+                        .font(.system(size: 12))
+                        .frame(width: 32, height: 32)
+                }
+                .buttonStyle(IconButtonStyle())
+                .help(sidebarVisible ? "Hide Sidebar" : "Show Sidebar")
                 
                 // Settings Button
                 Button(action: {
