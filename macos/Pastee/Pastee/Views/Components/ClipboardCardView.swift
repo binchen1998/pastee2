@@ -20,23 +20,8 @@ struct ClipboardCardView: View {
     @State private var isHovering = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            // 内容区域
-            contentView
-            
-            // 时间和操作按钮（始终占位，悬停时显示）
-            HStack {
-                Text(relativeTime(from: item.createdAt))
-                    .font(.system(size: 11))
-                    .foregroundColor(Theme.textSecondary)
-                
-                Spacer()
-                
-                actionButtons
-            }
-            .padding(.top, 4)
-            .opacity(isHovering ? 1 : 0)
-        }
+        // 内容区域
+        contentView
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 8)
@@ -52,6 +37,24 @@ struct ClipboardCardView: View {
         .overlay(alignment: .topTrailing) {
             bookmarkButton
                 .offset(x: 5, y: -5)
+                .opacity(isHovering ? 1 : 0)
+        }
+        .overlay(alignment: .bottomLeading) {
+            // 时间 overlay（悬停时显示）
+            Text(relativeTime(from: item.createdAt))
+                .font(.system(size: 10))
+                .foregroundColor(.white)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Color.black.opacity(0.7))
+                .cornerRadius(4)
+                .padding(6)
+                .opacity(isHovering ? 1 : 0)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            // 操作按钮（悬停时显示）
+            actionButtons
+                .padding(6)
                 .opacity(isHovering ? 1 : 0)
         }
         .overlay(alignment: .bottomTrailing) {

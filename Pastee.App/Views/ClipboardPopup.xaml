@@ -60,12 +60,7 @@
                                   CommandParameter="{Binding}"/>
                 </Border.InputBindings>
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <ContentControl Grid.Row="0">
+                    <ContentControl>
                         <ContentControl.Style>
                             <Style TargetType="ContentControl">
                                 <Setter Property="Content">
@@ -103,13 +98,17 @@
                         </ContentControl.Style>
                     </ContentControl>
 
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="0,4,0,0" x:Name="TimeInfo" Visibility="Hidden">
+                    <!-- Time Overlay (shown on hover) -->
+                    <Border x:Name="TimeInfo"
+                            HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                            Background="#B0000000" CornerRadius="4" Padding="6,2" Margin="-4,-4,-4,-4"
+                            Visibility="Hidden">
                         <TextBlock x:Name="TimeText"
                                    Text="{Binding CreatedAt, Converter={StaticResource RelativeTimeConverter}}"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Foreground="White"
                                    FontFamily="{StaticResource MainFont}"
-                                   FontSize="11"/>
-                    </StackPanel>
+                                   FontSize="10"/>
+                    </Border>
 
                     <!-- Important (Bookmark) Toggle (Hover Only) -->
                     <Button x:Name="BookmarkButton"
@@ -142,7 +141,6 @@
 
                     <!-- Upload Status Indicator -->
                     <Border x:Name="UploadingIndicator" 
-                            Grid.RowSpan="2"
                             HorizontalAlignment="Left" VerticalAlignment="Top"
                             Background="#80000000" CornerRadius="4" Padding="6,3" Margin="-4,-4,0,0"
                             Visibility="Collapsed">
@@ -154,7 +152,6 @@
                     
                     <!-- Upload Failed Indicator with Retry -->
                     <Border x:Name="UploadFailedIndicator" 
-                            Grid.RowSpan="2"
                             HorizontalAlignment="Left" VerticalAlignment="Top"
                             Background="#CC8B0000" CornerRadius="4" Padding="6,3" Margin="-4,-4,0,0"
                             Visibility="Collapsed">
@@ -176,7 +173,6 @@
 
                     <!-- Downloading Original Image Indicator -->
                     <Border x:Name="DownloadingIndicator" 
-                            Grid.RowSpan="2"
                             HorizontalAlignment="Right" VerticalAlignment="Bottom"
                             Background="#80000000" CornerRadius="4" Padding="6,3" Margin="0,0,-4,-4"
                             Visibility="Collapsed">
@@ -187,7 +183,7 @@
                     </Border>
 
                     <!-- Hover Actions -->
-                    <StackPanel Grid.RowSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" x:Name="ActionButtons" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" x:Name="ActionButtons" Visibility="Collapsed">
                         <Button Content="✎" Style="{StaticResource IconButtonStyle}"
                                 Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                 CommandParameter="{Binding}"
