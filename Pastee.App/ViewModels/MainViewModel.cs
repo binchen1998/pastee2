@@ -719,7 +719,7 @@ namespace Pastee.App.ViewModels
                 if (success != null)
                 {
                     System.Diagnostics.Debug.WriteLine("[MainVM] 添加到分类成功");
-                    await FetchCategoriesAsync(); // 刷新计数
+                    // 不需要刷新分类列表，避免不必要的网络请求
                 }
             }
             catch (Exception ex)
