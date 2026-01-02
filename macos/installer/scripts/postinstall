@@ -1,0 +1,12 @@
+#!/bin/bash
+# Pastee macOS Installer - Postinstall Script
+# 安装完成后的操作
+
+echo "Pastee 安装完成！"
+
+# 安装完成后启动应用
+echo "正在启动 Pastee..."
+open -a "/Applications/Pastee.app"
+
+exit 0
+

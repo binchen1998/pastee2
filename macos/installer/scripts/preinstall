@@ -1,0 +1,40 @@
+#!/bin/bash
+# Pastee macOS Installer - Preinstall Script
+# 安装前退出正在运行的 Pastee 应用
+
+echo "正在检查并退出运行中的 Pastee..."
+
+# 获取 Pastee 进程 ID
+PASTEE_PID=$(pgrep -x "Pastee")
+
+if [ -n "$PASTEE_PID" ]; then
+    echo "发现 Pastee 正在运行 (PID: $PASTEE_PID)，正在退出..."
+    
+    # 尝试优雅退出 (发送 SIGTERM)
+    kill -TERM "$PASTEE_PID" 2>/dev/null
+    
+    # 等待最多 5 秒让应用退出
+    for i in {1..10}; do
+        if ! pgrep -x "Pastee" > /dev/null; then
+            echo "Pastee 已成功退出"
+            break
+        fi
+        sleep 0.5
+    done
+    
+    # 如果还在运行，强制退出
+    if pgrep -x "Pastee" > /dev/null; then
+        echo "正在强制退出 Pastee..."
+        kill -9 "$PASTEE_PID" 2>/dev/null
+        sleep 1
+    fi
+else
+    echo "Pastee 未在运行"
+fi
+
+# 也可以通过 AppleScript 优雅退出 (备用方案)
+osascript -e 'tell application "Pastee" to quit' 2>/dev/null || true
+
+echo "预安装检查完成"
+exit 0
+

@@ -91,8 +91,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         
         if let button = statusItem?.button {
-            button.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "Pastee")
-            button.image?.isTemplate = true
+            // 使用自定义 Menu Bar 图标
+            if let menuBarImage = NSImage(named: "MenuBarIcon") {
+                menuBarImage.isTemplate = true  // 启用 template 模式，自动适应深色/浅色模式
+                button.image = menuBarImage
+            } else {
+                // 备用：使用系统图标
+                button.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "Pastee")
+                button.image?.isTemplate = true
+            }
             // 单击打开窗口
             button.action = #selector(statusBarButtonClicked(_:))
             button.target = self
@@ -356,22 +363,43 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Accessibility Permission
     
     private static let kDontShowAccessibilityPrompt = "dontShowAccessibilityPrompt"
+    private static let kAccessibilityPromptCount = "accessibilityPromptCount"
+    private static let kMaxAccessibilityPrompts = 2  // 最多提示2次
     
     private func checkAccessibilityPermission() {
         print("⚡️ [AppDelegate] checkAccessibilityPermission - checking AXIsProcessTrusted")
         let trusted = AXIsProcessTrusted()
         print("⚡️ [AppDelegate] checkAccessibilityPermission - trusted: \(trusted)")
         
-        if !trusted {
-            // 检查用户是否选择了不再提示
-            let dontShow = UserDefaults.standard.bool(forKey: AppDelegate.kDontShowAccessibilityPrompt)
-            print("⚡️ [AppDelegate] checkAccessibilityPermission - dontShow: \(dontShow)")
-            if !dontShow {
-                print("⚡️ [AppDelegate] checkAccessibilityPermission - showing dialog")
-                showAccessibilityPermissionDialog()
-                print("⚡️ [AppDelegate] checkAccessibilityPermission - dialog closed")
-            }
+        if trusted {
+            // 已获得权限，重置提示计数
+            UserDefaults.standard.set(0, forKey: AppDelegate.kAccessibilityPromptCount)
+            UserDefaults.standard.set(false, forKey: AppDelegate.kDontShowAccessibilityPrompt)
+            print("⚡️ [AppDelegate] checkAccessibilityPermission - already trusted, reset prompt count")
+            return
         }
+        
+        // 检查用户是否选择了不再提示
+        let dontShow = UserDefaults.standard.bool(forKey: AppDelegate.kDontShowAccessibilityPrompt)
+        print("⚡️ [AppDelegate] checkAccessibilityPermission - dontShow: \(dontShow)")
+        
+        if dontShow {
+            print("⚡️ [AppDelegate] checkAccessibilityPermission - user chose not to show")
+            return
+        }
+        
+        // 检查已提示次数
+        let promptCount = UserDefaults.standard.integer(forKey: AppDelegate.kAccessibilityPromptCount)
+        if promptCount >= AppDelegate.kMaxAccessibilityPrompts {
+            print("⚡️ [AppDelegate] checkAccessibilityPermission - max prompts reached (\(promptCount))")
+            return
+        }
+        
+        print("⚡️ [AppDelegate] checkAccessibilityPermission - showing dialog (count: \(promptCount))")
+        showAccessibilityPermissionDialog()
+        
+        // 增加提示计数
+        UserDefaults.standard.set(promptCount + 1, forKey: AppDelegate.kAccessibilityPromptCount)
         print("⚡️ [AppDelegate] checkAccessibilityPermission - done")
     }
     
@@ -386,6 +414,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         • 全局快捷键 (⌘⇧V)
         
         请在系统设置中启用 Pastee 的辅助功能权限。
+        
+        💡 如果已授权但仍看到此提示，请在辅助功能列表中删除 Pastee 后重新添加。
         """
         alert.alertStyle = .warning
         alert.icon = NSImage(systemSymbolName: "hand.raised.circle.fill", accessibilityDescription: "Permission")
