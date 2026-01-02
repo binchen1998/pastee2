@@ -9,6 +9,22 @@ import SwiftUI
 import AppKit
 import Carbon.HIToolbox
 
+// MARK: - 边缘调整大小的方向
+struct ResizeEdge: OptionSet {
+    let rawValue: Int
+    
+    static let none   = ResizeEdge([])
+    static let left   = ResizeEdge(rawValue: 1 << 0)
+    static let right  = ResizeEdge(rawValue: 1 << 1)
+    static let top    = ResizeEdge(rawValue: 1 << 2)
+    static let bottom = ResizeEdge(rawValue: 1 << 3)
+    
+    static let topLeft: ResizeEdge = [.top, .left]
+    static let topRight: ResizeEdge = [.top, .right]
+    static let bottomLeft: ResizeEdge = [.bottom, .left]
+    static let bottomRight: ResizeEdge = [.bottom, .right]
+}
+
 // 自定义HostingView：允许第一次点击直接传递到控件，透明背景
 class FirstClickHostingView<Content: View>: NSHostingView<Content> {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
@@ -25,6 +41,13 @@ class FirstClickHostingView<Content: View>: NSHostingView<Content> {
 class PopupWindow: NSPanel {
     private var contentHostingView: FirstClickHostingView<ClipboardPopupView>?
     private static let frameSaveKey = "PopupWindowFrame"
+    
+    // 边缘调整大小相关
+    private let edgeThreshold: CGFloat = 6  // 边缘检测阈值（像素）
+    private var currentResizeEdge: ResizeEdge = .none
+    private var isResizing = false
+    private var resizeStartFrame: NSRect = .zero
+    private var resizeStartMouseLocation: NSPoint = .zero
     
     // 允许成为key窗口以接收键盘事件，但不成为主窗口
     override var canBecomeKey: Bool { true }
@@ -90,6 +113,158 @@ class PopupWindow: NSPanel {
             name: .adjustWindowWidth,
             object: nil
         )
+    }
+    
+    // MARK: - 边缘检测与调整大小
+    
+    /// 检测鼠标位置对应的边缘
+    private func detectEdge(at point: NSPoint) -> ResizeEdge {
+        let frame = self.frame
+        let localPoint = NSPoint(x: point.x - frame.origin.x, y: point.y - frame.origin.y)
+        
+        var edge: ResizeEdge = .none
+        
+        // 检测左右边缘
+        if localPoint.x <= edgeThreshold {
+            edge.insert(.left)
+        } else if localPoint.x >= frame.width - edgeThreshold {
+            edge.insert(.right)
+        }
+        
+        // 检测上下边缘
+        if localPoint.y <= edgeThreshold {
+            edge.insert(.bottom)
+        } else if localPoint.y >= frame.height - edgeThreshold {
+            edge.insert(.top)
+        }
+        
+        return edge
+    }
+    
+    /// 根据边缘设置光标
+    private func updateCursor(for edge: ResizeEdge) {
+        switch edge {
+        case .left, .right:
+            NSCursor.resizeLeftRight.set()
+        case .top, .bottom:
+            NSCursor.resizeUpDown.set()
+        case .topLeft, .bottomRight:
+            // macOS 没有内置的对角线光标，使用箭头
+            NSCursor.crosshair.set()
+        case .topRight, .bottomLeft:
+            NSCursor.crosshair.set()
+        case .none:
+            NSCursor.arrow.set()
+        default:
+            // 组合边缘（角落）
+            if edge.contains(.left) || edge.contains(.right) {
+                if edge.contains(.top) || edge.contains(.bottom) {
+                    NSCursor.crosshair.set()
+                } else {
+                    NSCursor.resizeLeftRight.set()
+                }
+            } else {
+                NSCursor.resizeUpDown.set()
+            }
+        }
+    }
+    
+    override func mouseMoved(with event: NSEvent) {
+        let mouseLocation = NSEvent.mouseLocation
+        let edge = detectEdge(at: mouseLocation)
+        currentResizeEdge = edge
+        updateCursor(for: edge)
+        super.mouseMoved(with: event)
+    }
+    
+    override func mouseDown(with event: NSEvent) {
+        let mouseLocation = NSEvent.mouseLocation
+        let edge = detectEdge(at: mouseLocation)
+        
+        if edge != .none {
+            // 开始调整大小
+            isResizing = true
+            currentResizeEdge = edge
+            resizeStartFrame = self.frame
+            resizeStartMouseLocation = mouseLocation
+            updateCursor(for: edge)
+        } else {
+            super.mouseDown(with: event)
+        }
+    }
+    
+    override func mouseDragged(with event: NSEvent) {
+        if isResizing {
+            let currentMouseLocation = NSEvent.mouseLocation
+            let deltaX = currentMouseLocation.x - resizeStartMouseLocation.x
+            let deltaY = currentMouseLocation.y - resizeStartMouseLocation.y
+            
+            var newFrame = resizeStartFrame
+            
+            // 根据边缘调整窗口
+            if currentResizeEdge.contains(.left) {
+                newFrame.origin.x = resizeStartFrame.origin.x + deltaX
+                newFrame.size.width = resizeStartFrame.width - deltaX
+            }
+            if currentResizeEdge.contains(.right) {
+                newFrame.size.width = resizeStartFrame.width + deltaX
+            }
+            if currentResizeEdge.contains(.bottom) {
+                newFrame.origin.y = resizeStartFrame.origin.y + deltaY
+                newFrame.size.height = resizeStartFrame.height - deltaY
+            }
+            if currentResizeEdge.contains(.top) {
+                newFrame.size.height = resizeStartFrame.height + deltaY
+            }
+            
+            // 应用最小/最大尺寸限制
+            if newFrame.size.width < minSize.width {
+                if currentResizeEdge.contains(.left) {
+                    newFrame.origin.x = resizeStartFrame.maxX - minSize.width
+                }
+                newFrame.size.width = minSize.width
+            }
+            if newFrame.size.width > maxSize.width {
+                if currentResizeEdge.contains(.left) {
+                    newFrame.origin.x = resizeStartFrame.maxX - maxSize.width
+                }
+                newFrame.size.width = maxSize.width
+            }
+            if newFrame.size.height < minSize.height {
+                if currentResizeEdge.contains(.bottom) {
+                    newFrame.origin.y = resizeStartFrame.maxY - minSize.height
+                }
+                newFrame.size.height = minSize.height
+            }
+            if newFrame.size.height > maxSize.height {
+                if currentResizeEdge.contains(.bottom) {
+                    newFrame.origin.y = resizeStartFrame.maxY - maxSize.height
+                }
+                newFrame.size.height = maxSize.height
+            }
+            
+            self.setFrame(newFrame, display: true)
+        } else {
+            super.mouseDragged(with: event)
+        }
+    }
+    
+    override func mouseUp(with event: NSEvent) {
+        if isResizing {
+            isResizing = false
+            currentResizeEdge = .none
+            NSCursor.arrow.set()
+            saveFrame()
+        } else {
+            super.mouseUp(with: event)
+        }
+    }
+    
+    override func mouseExited(with event: NSEvent) {
+        if !isResizing {
+            NSCursor.arrow.set()
+        }
+        super.mouseExited(with: event)
     }
     
     deinit {
