@@ -294,3 +294,65 @@ class DraftManager {
     }
 }
 
+// MARK: - Local Cache Manager
+
+class LocalCacheManager {
+    static let shared = LocalCacheManager()
+    
+    private var pasteeDir: URL {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let dir = appSupport.appendingPathComponent("Pastee")
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+    
+    private var cacheFile: URL { pasteeDir.appendingPathComponent("first_page_cache.json") }
+    
+    private init() {}
+    
+    /// 保存第一页数据到本地缓存（最多只保存一页）
+    func saveItems(_ items: [ClipboardEntry]) {
+        // 使用自定义日期格式，与 ClipboardEntry.parseDate() 兼容
+        let encoder = JSONEncoder()
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
+        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ"
+        encoder.dateEncodingStrategy = .formatted(dateFormatter)
+        
+        do {
+            let data = try encoder.encode(items)
+            try data.write(to: cacheFile)
+            print("⚡️ [LocalCache] Saved \(items.count) items to cache: \(cacheFile.path)")
+        } catch {
+            print("⚡️ [LocalCache] Failed to save cache: \(error)")
+        }
+    }
+    
+    /// 从本地缓存加载项目
+    func loadItems() -> [ClipboardEntry] {
+        guard FileManager.default.fileExists(atPath: cacheFile.path) else {
+            print("⚡️ [LocalCache] Cache file does not exist")
+            return []
+        }
+        
+        do {
+            let data = try Data(contentsOf: cacheFile)
+            // ClipboardEntry 有自定义的 init(from decoder:)，会处理日期解析
+            let decoder = JSONDecoder()
+            let entries = try decoder.decode([ClipboardEntry].self, from: data)
+            print("⚡️ [LocalCache] Loaded \(entries.count) items from cache")
+            return entries
+        } catch {
+            print("⚡️ [LocalCache] Failed to load cache: \(error)")
+            return []
+        }
+    }
+    
+    /// 清除缓存
+    func clearCache() {
+        try? FileManager.default.removeItem(at: cacheFile)
+        print("⚡️ [LocalCache] Cache cleared")
+    }
+}
+

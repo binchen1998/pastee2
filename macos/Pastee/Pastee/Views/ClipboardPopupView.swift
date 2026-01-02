@@ -80,6 +80,11 @@ struct ClipboardPopupView: View {
                 editingItem = nil
             }
         }
+        .alert("Network Error", isPresented: $viewModel.showNetworkErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Unable to connect to the server.\n\n\(viewModel.networkErrorMessage)\n\nShowing cached data instead.")
+        }
     }
     
     // MARK: - Helper Functions
@@ -450,6 +455,41 @@ CategoryRow(
             .padding(.horizontal, 16)
             .padding(.top, 12)
             .padding(.bottom, 8)
+            
+            // Offline Status Bar (shown below header when offline)
+            if viewModel.isShowingCachedData {
+                HStack(spacing: 6) {
+                    Text("⚠")
+                        .font(.system(size: 12))
+                        .foregroundColor(Color(red: 0.95, green: 0.61, blue: 0.07))
+                    
+                    Text("Offline - Showing cached data")
+                        .font(.system(size: 11))
+                        .foregroundColor(Color(red: 0.95, green: 0.61, blue: 0.07))
+                    
+                    Button(action: {
+                        Task { await viewModel.refresh() }
+                    }) {
+                        Text("↻ Retry")
+                            .font(.system(size: 10))
+                            .foregroundColor(Color(red: 0.95, green: 0.61, blue: 0.07))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 3)
+                                    .stroke(Color(red: 0.95, green: 0.61, blue: 0.07), lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.vertical, 6)
+                .padding(.horizontal, 8)
+                .frame(maxWidth: .infinity)
+                .background(Color(red: 0.18, green: 0.16, blue: 0.12))
+                .cornerRadius(4)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 6)
+            }
             
             // 项目列表
             ScrollViewReader { proxy in

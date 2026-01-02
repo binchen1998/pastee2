@@ -72,10 +72,11 @@ namespace Pastee.App.Services
                         }
 
                         var fileInfo = new FileInfo(filePath);
-                        var fileStream = File.OpenRead(filePath);
-                        var streamContent = new StreamContent(fileStream);
-                        streamContent.Headers.ContentType = new MediaTypeHeaderValue("image/png");
-                        content.Add(streamContent, "file", fileInfo.Name);
+                        // 将文件内容读取到内存中，避免流生命周期问题
+                        var fileBytes = await File.ReadAllBytesAsync(filePath);
+                        var byteContent = new ByteArrayContent(fileBytes);
+                        byteContent.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+                        content.Add(byteContent, "file", fileInfo.Name);
                     }
 
                     var request = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/clipboard/items");

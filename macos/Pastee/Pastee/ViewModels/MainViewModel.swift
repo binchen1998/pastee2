@@ -25,6 +25,9 @@ class MainViewModel: ObservableObject {
     @Published var showToast = false
     @Published var toastMessage = "Copied"
     @Published var scrollToTopTrigger = UUID()  // 用于触发滚动到顶部
+    @Published var isShowingCachedData = false
+    @Published var networkErrorMessage = ""
+    @Published var showNetworkErrorAlert = false
     
     private var currentPage = 1
     private var hasMore = true
@@ -122,6 +125,10 @@ class MainViewModel: ObservableObject {
         currentPage = 1
         hasMore = true
         
+        // 刷新时先清除网络错误状态
+        isShowingCachedData = false
+        networkErrorMessage = ""
+        
         do {
             let response = try await APIService.shared.getClipboardItems(page: 1, category: selectedCategory)
             
@@ -134,6 +141,11 @@ class MainViewModel: ObservableObject {
             hasMore = response.hasMoreItems
             currentPage = 1
             
+            // 仅当是 "all" 分类时保存到本地缓存（最多缓存一页）
+            if selectedCategory == "all" {
+                LocalCacheManager.shared.saveItems(loadedItems)
+            }
+            
             // 自动下载原图
             for item in loadedItems {
                 if item.contentType == "image" && item.isThumbnail && !(item.originalDeleted ?? false) {
@@ -144,6 +156,30 @@ class MainViewModel: ObservableObject {
             }
         } catch {
             print("Failed to load items: \(error)")
+            
+            // 网络错误时从本地缓存加载（仅当是 "all" 分类时才有缓存）
+            if selectedCategory == "all" {
+                let cachedItems = LocalCacheManager.shared.loadItems()
+                if !cachedItems.isEmpty {
+                    var loadedItems = cachedItems
+                    for i in loadedItems.indices {
+                        loadedItems[i].initializeImageState()
+                    }
+                    items = loadedItems
+                    isShowingCachedData = true
+                    networkErrorMessage = error.localizedDescription
+                    showNetworkErrorAlert = true
+                } else {
+                    // 没有缓存数据
+                    networkErrorMessage = error.localizedDescription
+                    showNetworkErrorAlert = true
+                }
+            } else {
+                // 非 "all" 分类没有缓存
+                networkErrorMessage = error.localizedDescription
+                showNetworkErrorAlert = true
+            }
+            hasMore = false
         }
         
         isLoading = false
@@ -254,6 +290,10 @@ class MainViewModel: ObservableObject {
         categories = []
         currentPage = 1
         hasMore = true
+        
+        // 清除网络错误状态
+        isShowingCachedData = false
+        networkErrorMessage = ""
         
         // 触发滚动到顶部
         scrollToTopTrigger = UUID()

@@ -46,6 +46,8 @@ namespace Pastee.App.ViewModels
         private string _currentHotkey = "Win + V";
         private bool _hideAfterPaste = true;
         private string _loadingText = "Loading...";
+        private bool _isShowingCachedData;
+        private string _networkErrorMessage = string.Empty;
 
         public ObservableCollection<ClipboardEntry> Items { get; } = new ObservableCollection<ClipboardEntry>();
         public ObservableCollection<Category> Categories { get; } = new ObservableCollection<Category>();
@@ -55,6 +57,18 @@ namespace Pastee.App.ViewModels
         {
             get => _loadingText;
             set { _loadingText = value; OnPropertyChanged(nameof(LoadingText)); }
+        }
+
+        public bool IsShowingCachedData
+        {
+            get => _isShowingCachedData;
+            set { _isShowingCachedData = value; OnPropertyChanged(nameof(IsShowingCachedData)); }
+        }
+
+        public string NetworkErrorMessage
+        {
+            get => _networkErrorMessage;
+            set { _networkErrorMessage = value; OnPropertyChanged(nameof(NetworkErrorMessage)); }
         }
 
         public string SearchInput
@@ -304,7 +318,11 @@ namespace Pastee.App.ViewModels
                 if (category != null)
                 {
                     var activeWindow = GetActiveWindow();
-                    var dialog = new Pastee.App.Views.ConfirmWindow($"Are you sure you want to delete category '{category.Name}'?")
+                    var dialog = new Pastee.App.Views.ConfirmWindow(
+                        message: $"Are you sure you want to delete category '{category.Name}'?",
+                        showCancelButton: true,
+                        confirmText: "Delete",
+                        titleText: "Delete Category")
                     {
                         Owner = activeWindow
                     };
@@ -723,6 +741,9 @@ namespace Pastee.App.ViewModels
             if (page == 1)
             {
                 LoadingText = !string.IsNullOrWhiteSpace(SearchText) ? "Searching..." : "Loading...";
+                // 刷新时先清除网络错误状态
+                IsShowingCachedData = false;
+                NetworkErrorMessage = string.Empty;
             }
             else
             {
@@ -776,7 +797,34 @@ namespace Pastee.App.ViewModels
                 }
 
                 var url = $"/clipboard/items?{string.Join("&", queryParams)}";
-                var remoteItems = await _apiService.GetAsync<List<ClipboardEntry>>(url, _fetchCts.Token);
+                
+                List<ClipboardEntry>? remoteItems = null;
+                bool networkError = false;
+                string errorMsg = string.Empty;
+                
+                try
+                {
+                    remoteItems = await _apiService.GetAsync<List<ClipboardEntry>>(url, _fetchCts.Token);
+                }
+                catch (System.Net.Http.HttpRequestException ex)
+                {
+                    networkError = true;
+                    errorMsg = $"Network error: {ex.Message}";
+                    System.Diagnostics.Debug.WriteLine($"[MainVM] 网络请求异常: {ex.Message}");
+                }
+                catch (TaskCanceledException ex) when (!_fetchCts.Token.IsCancellationRequested)
+                {
+                    // 超时（非用户主动取消）
+                    networkError = true;
+                    errorMsg = "Request timed out";
+                    System.Diagnostics.Debug.WriteLine($"[MainVM] 请求超时: {ex.Message}");
+                }
+                catch (TaskCanceledException)
+                {
+                    // 用户主动取消，直接返回
+                    System.Diagnostics.Debug.WriteLine("[MainVM] 请求被用户取消");
+                    return;
+                }
 
                 if (remoteItems != null)
                 {
@@ -805,16 +853,71 @@ namespace Pastee.App.ViewModels
                     _currentPage = page;
                     _hasMore = remoteItems.Count == DefaultPageSize;
                     LoadMoreCommand.RaiseCanExecuteChanged();
+                    
+                    // 成功获取第一页数据后保存到缓存（仅当是 "all" 分类且无搜索时）
+                    if (page == 1 && _selectedCategory == "all" && string.IsNullOrWhiteSpace(SearchText))
+                    {
+                        _ = _dataStore.SaveFirstPageCacheAsync(remoteItems);
+                    }
                 }
                 else if (page == 1)
                 {
                     System.Diagnostics.Debug.WriteLine("[MainVM] 服务器返回空或失败，回退到本地缓存");
-                    var localItems = await _dataStore.LoadAsync();
-                    foreach (var item in localItems.OrderByDescending(i => i.CreatedAt))
+                    
+                    // 从专门的第一页缓存加载
+                    var cachedItems = await _dataStore.LoadFirstPageCacheAsync();
+                    foreach (var item in cachedItems.OrderByDescending(i => i.CreatedAt))
                     {
                         item.InitializeImageState();
                         Items.Add(item);
                     }
+                    
+                    // 如果是网络错误导致的回退，显示提示
+                    if (networkError && cachedItems.Any())
+                    {
+                        IsShowingCachedData = true;
+                        NetworkErrorMessage = errorMsg;
+                        RaiseNetworkError(errorMsg);
+                    }
+                    else if (networkError)
+                    {
+                        // 网络错误但没有缓存数据
+                        NetworkErrorMessage = errorMsg;
+                        RaiseNetworkError(errorMsg);
+                    }
+                    
+                    _hasMore = false;
+                    LoadMoreCommand.RaiseCanExecuteChanged();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MainVM] FetchItems 异常: {ex.Message}");
+                
+                // 发生异常时尝试从本地缓存加载
+                if (page == 1)
+                {
+                    var cachedItems = await _dataStore.LoadFirstPageCacheAsync();
+                    foreach (var item in cachedItems.OrderByDescending(i => i.CreatedAt))
+                    {
+                        item.InitializeImageState();
+                        Items.Add(item);
+                    }
+                    
+                    if (cachedItems.Any())
+                    {
+                        IsShowingCachedData = true;
+                        NetworkErrorMessage = $"Error: {ex.Message}";
+                        RaiseNetworkError(ex.Message);
+                    }
+                    else
+                    {
+                        NetworkErrorMessage = $"Error: {ex.Message}";
+                        RaiseNetworkError(ex.Message);
+                    }
+                    
+                    _hasMore = false;
+                    LoadMoreCommand.RaiseCanExecuteChanged();
                 }
             }
             finally
@@ -1132,7 +1235,11 @@ namespace Pastee.App.ViewModels
 
             // 1. 确认逻辑 (使用统一 UI 的 ConfirmWindow)
             var activeWindow = GetActiveWindow();
-            var dialog = new Pastee.App.Views.ConfirmWindow("Are you sure you want to delete this item?")
+            var dialog = new Pastee.App.Views.ConfirmWindow(
+                message: "Are you sure you want to delete this item?",
+                showCancelButton: true,
+                confirmText: "Delete",
+                titleText: "Delete Item")
             {
                 Owner = activeWindow
             };
@@ -1310,5 +1417,11 @@ namespace Pastee.App.ViewModels
         public event PropertyChangedEventHandler? PropertyChanged;
         public event EventHandler<ClipboardEntry>? RequestEdit;
         public event EventHandler? ItemCopied;
+        public event EventHandler<string>? NetworkErrorOccurred;
+
+        private void RaiseNetworkError(string message)
+        {
+            NetworkErrorOccurred?.Invoke(this, message);
+        }
     }
 }

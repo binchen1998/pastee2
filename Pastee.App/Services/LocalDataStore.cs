@@ -16,6 +16,7 @@ namespace Pastee.App.Services
         private readonly string _imageDirectory;
         private readonly string _draftFile;
         private readonly string _settingsFile;
+        private readonly string _firstPageCacheFile;
         private static readonly System.Threading.SemaphoreSlim _fileLock = new System.Threading.SemaphoreSlim(1, 1);
         
         private readonly JsonSerializerOptions _options = new JsonSerializerOptions
@@ -36,6 +37,7 @@ namespace Pastee.App.Services
             _dataFile = Path.Combine(_baseDirectory, "clipboard.json");
             _draftFile = Path.Combine(_baseDirectory, "drafts.json");
             _settingsFile = Path.Combine(_baseDirectory, "settings.json");
+            _firstPageCacheFile = Path.Combine(_baseDirectory, "first_page_cache.json");
 
             Directory.CreateDirectory(_baseDirectory);
             Directory.CreateDirectory(_imageDirectory);
@@ -179,6 +181,63 @@ namespace Pastee.App.Services
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[LocalData] 写入失败: {ex.Message}");
+            }
+            finally
+            {
+                _fileLock.Release();
+            }
+        }
+
+        /// <summary>
+        /// 保存第一页数据到缓存（用于离线时显示）
+        /// </summary>
+        public async Task SaveFirstPageCacheAsync(IEnumerable<ClipboardEntry> entries)
+        {
+            await _fileLock.WaitAsync();
+            try
+            {
+                using (var stream = new FileStream(_firstPageCacheFile, FileMode.Create, FileAccess.Write, FileShare.Read))
+                {
+                    await JsonSerializer.SerializeAsync(stream, entries, _options);
+                    await stream.FlushAsync();
+                }
+                System.Diagnostics.Debug.WriteLine($"[LocalData] 第一页缓存已保存");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[LocalData] 缓存保存失败: {ex.Message}");
+            }
+            finally
+            {
+                _fileLock.Release();
+            }
+        }
+
+        /// <summary>
+        /// 加载第一页缓存
+        /// </summary>
+        public async Task<IReadOnlyList<ClipboardEntry>> LoadFirstPageCacheAsync()
+        {
+            if (!File.Exists(_firstPageCacheFile))
+            {
+                System.Diagnostics.Debug.WriteLine("[LocalData] 缓存文件不存在");
+                return Array.Empty<ClipboardEntry>();
+            }
+
+            await _fileLock.WaitAsync();
+            try
+            {
+                using (var stream = new FileStream(_firstPageCacheFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                {
+                    var items = await JsonSerializer.DeserializeAsync<List<ClipboardEntry>>(stream, _options);
+                    System.Diagnostics.Debug.WriteLine($"[LocalData] 从缓存加载了 {items?.Count ?? 0} 条记录");
+                    return items ?? (IReadOnlyList<ClipboardEntry>)Array.Empty<ClipboardEntry>();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[LocalData] 缓存读取失败: {ex.Message}");
+                return Array.Empty<ClipboardEntry>();
             }
             finally
             {

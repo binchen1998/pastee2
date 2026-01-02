@@ -46,6 +46,25 @@ namespace Pastee.App.Views
             
             // 监听滚动到顶部请求
             _viewModel.ScrollToTopRequested += OnScrollToTopRequested;
+            
+            // 监听网络错误事件
+            _viewModel.NetworkErrorOccurred += OnNetworkErrorOccurred;
+        }
+
+        private void OnNetworkErrorOccurred(object? sender, string errorMessage)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                var dialog = new ConfirmWindow(
+                    message: $"Unable to connect to the server.\n\n{errorMessage}\n\nShowing cached data instead.",
+                    showCancelButton: false,
+                    confirmText: "OK",
+                    titleText: "Network Error")
+                {
+                    Owner = this.IsVisible ? this : null
+                };
+                dialog.ShowDialog();
+            }));
         }
 
         private void OnScrollToTopRequested(object? sender, EventArgs e)
@@ -135,7 +154,11 @@ namespace Pastee.App.Views
 
         private void OnClearDraftsClick(object sender, RoutedEventArgs e)
         {
-            var dialog = new ConfirmWindow("Are you sure you want to clear all drafts? This action cannot be undone.")
+            var dialog = new ConfirmWindow(
+                message: "Are you sure you want to clear all drafts? This action cannot be undone.",
+                showCancelButton: true,
+                confirmText: "Clear All",
+                titleText: "Clear Drafts")
             {
                 Owner = this
             };

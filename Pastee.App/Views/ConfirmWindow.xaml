@@ -21,7 +21,8 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <TextBlock Text="Confirm Action" 
+            <TextBlock x:Name="TitleText"
+                       Text="Confirm Action" 
                        Foreground="{StaticResource TextPrimaryBrush}"
                        FontWeight="SemiBold"
                        FontSize="18"
@@ -38,13 +39,15 @@
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"
                         Margin="0,20,0,0">
-                <Button Content="Cancel"
+                <Button x:Name="CancelButton"
+                        Content="Cancel"
                         Style="{StaticResource LinkButtonStyle}"
                         Margin="0,0,15,0"
                         Click="OnCancel"/>
-                <Button Content="Delete"
+                <Button x:Name="ConfirmButton"
+                        Content="Delete"
                         Style="{StaticResource PrimaryButtonStyle}"
-                        Background="{StaticResource DeleteBrush}"
+                        Background="{StaticResource AccentBrush}"
                         MinWidth="100"
                         Click="OnConfirm"/>
             </StackPanel>

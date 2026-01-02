@@ -77,9 +77,9 @@ struct ClipboardEntry: Codable, Identifiable, Equatable {
         thumbnail = try container.decodeIfPresent(String.self, forKey: .thumbnail)
         originalDeleted = try container.decodeIfPresent(Bool.self, forKey: .originalDeleted)
         
-        // 解析日期
+        // 解析日期 - 支持多种格式，并假设服务器返回的时间为UTC
         if let dateString = try? container.decode(String.self, forKey: .createdAt) {
-            createdAt = ISO8601DateFormatter().date(from: dateString) ?? Date()
+            createdAt = ClipboardEntry.parseDate(dateString) ?? Date()
         } else {
             createdAt = Date()
         }
@@ -119,6 +119,48 @@ struct ClipboardEntry: Codable, Identifiable, Equatable {
     
     static func == (lhs: ClipboardEntry, rhs: ClipboardEntry) -> Bool {
         lhs.id == rhs.id
+    }
+    
+    /// 解析服务器返回的日期字符串，支持多种格式
+    /// 服务器返回的时间被视为 UTC 时间
+    static func parseDate(_ dateString: String) -> Date? {
+        // 1. 首先尝试带毫秒和时区的 ISO8601 格式
+        let iso8601Full = ISO8601DateFormatter()
+        iso8601Full.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = iso8601Full.date(from: dateString) {
+            return date
+        }
+        
+        // 2. 尝试标准 ISO8601（不带毫秒）
+        let iso8601Standard = ISO8601DateFormatter()
+        iso8601Standard.formatOptions = [.withInternetDateTime]
+        if let date = iso8601Standard.date(from: dateString) {
+            return date
+        }
+        
+        // 3. 尝试不带时区的格式（假设为 UTC）
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
+        
+        // 尝试多种常见格式
+        let formats = [
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",  // 微秒精度
+            "yyyy-MM-dd'T'HH:mm:ss.SSS",      // 毫秒精度
+            "yyyy-MM-dd'T'HH:mm:ss",          // 秒精度
+            "yyyy-MM-dd HH:mm:ss.SSSSSS",     // 空格分隔
+            "yyyy-MM-dd HH:mm:ss.SSS",
+            "yyyy-MM-dd HH:mm:ss"
+        ]
+        
+        for format in formats {
+            dateFormatter.dateFormat = format
+            if let date = dateFormatter.date(from: dateString) {
+                return date
+            }
+        }
+        
+        return nil
     }
 }
 

@@ -174,7 +174,11 @@ namespace Pastee.App.Views
 
         private async void OnClearCacheClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            var confirm = new ConfirmWindow("Are you sure you want to clear all cached data and images? This will reset your local database.", "Clear")
+            var confirm = new ConfirmWindow(
+                message: "Are you sure you want to clear all cached data and images? This will reset your local database.",
+                showCancelButton: true,
+                confirmText: "Clear",
+                titleText: "Clear Cache")
             {
                 Owner = this
             };

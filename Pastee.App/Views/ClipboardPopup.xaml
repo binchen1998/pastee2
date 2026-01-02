@@ -492,8 +492,58 @@
                             ToolTip="Hide (Esc)"/>
                 </StackPanel>
 
+                <!-- Offline Status Bar (shown below header when offline) -->
+                <Border x:Name="OfflineStatusBar"
+                        Background="#2D2A1F"
+                        CornerRadius="4"
+                        Padding="8,6"
+                        Margin="0,40,0,6"
+                        VerticalAlignment="Top"
+                        Visibility="{Binding IsShowingCachedData, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="⚠" Foreground="#F39C12" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Offline - Showing cached data" 
+                                   Foreground="#F39C12" 
+                                   FontSize="11"
+                                   FontFamily="{StaticResource MainFont}"
+                                   VerticalAlignment="Center"/>
+                        <Button Content="↻ Retry" 
+                                Margin="12,0,0,0"
+                                Padding="8,2"
+                                FontSize="10"
+                                Background="Transparent"
+                                Foreground="#F39C12"
+                                BorderThickness="1"
+                                BorderBrush="#F39C12"
+                                Cursor="Hand"
+                                Command="{Binding RefreshCommand}">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" 
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                            CornerRadius="3" 
+                                            Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </StackPanel>
+                </Border>
+
                 <!-- List -->
-                <ScrollViewer x:Name="ItemsScrollViewer" VerticalScrollBarVisibility="Auto" ScrollChanged="OnScrollChanged" Margin="0,40,0,0">
+                <ScrollViewer x:Name="ItemsScrollViewer" VerticalScrollBarVisibility="Auto" ScrollChanged="OnScrollChanged">
+                    <ScrollViewer.Style>
+                        <Style TargetType="ScrollViewer">
+                            <Setter Property="Margin" Value="0,40,0,0"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsShowingCachedData}" Value="True">
+                                    <Setter Property="Margin" Value="0,76,0,0"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ScrollViewer.Style>
                     <StackPanel>
                         <ItemsControl ItemsSource="{Binding FilteredItems}" ItemTemplate="{StaticResource ClipboardCardTemplate}">
                             <ItemsControl.ItemsPanel>

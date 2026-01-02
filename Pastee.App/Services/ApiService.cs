@@ -159,10 +159,23 @@ namespace Pastee.App.Services
                 System.Diagnostics.Debug.WriteLine($"[API] 请求成功. 响应体预览: {content.Substring(0, Math.Min(100, content.Length))}");
                 return JsonSerializer.Deserialize<T>(content, _jsonOptions);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex) when (ct.IsCancellationRequested)
             {
+                // 用户主动取消，返回 null 不抛异常
                 System.Diagnostics.Debug.WriteLine($"[API] 请求已取消: {request.RequestUri}");
                 return default;
+            }
+            catch (OperationCanceledException ex)
+            {
+                // 超时导致的取消，需要抛出让调用者处理
+                System.Diagnostics.Debug.WriteLine($"[API] 请求超时: {request.RequestUri}");
+                throw new TaskCanceledException("Request timed out", ex);
+            }
+            catch (HttpRequestException ex)
+            {
+                // 网络错误，重新抛出让调用者处理
+                System.Diagnostics.Debug.WriteLine($"[API] 网络错误: {ex.Message}");
+                throw;
             }
             catch (Exception ex)
             {
