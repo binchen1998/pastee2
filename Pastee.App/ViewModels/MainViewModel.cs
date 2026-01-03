@@ -1177,40 +1177,60 @@ namespace Pastee.App.ViewModels
 
         private async Task<ClipboardEntry?> TryCreateEntryFromClipboardAsync()
         {
-            try
+            const int maxRetries = 5;
+            const int baseDelayMs = 50;
+
+            for (int attempt = 0; attempt < maxRetries; attempt++)
             {
-                // 剪贴板必须在 UI 线程访问
-                return await Application.Current.Dispatcher.Invoke(async () =>
+                try
                 {
-                    if (System.Windows.Clipboard.ContainsText())
+                    // 剪贴板必须在 UI 线程访问
+                    return await Application.Current.Dispatcher.Invoke(async () =>
                     {
-                        var text = System.Windows.Clipboard.GetText();
-                        if (string.IsNullOrWhiteSpace(text)) return null;
-
-                        return new ClipboardEntry
+                        if (System.Windows.Clipboard.ContainsText())
                         {
-                            ContentType = "text",
-                            Content = text.Trim(),
-                            CreatedAt = DateTimeOffset.Now
-                        };
-                    }
+                            var text = System.Windows.Clipboard.GetText();
+                            if (string.IsNullOrWhiteSpace(text)) return null;
 
-                    if (System.Windows.Clipboard.ContainsImage())
+                            return new ClipboardEntry
+                            {
+                                ContentType = "text",
+                                Content = text.Trim(),
+                                CreatedAt = DateTimeOffset.Now
+                            };
+                        }
+
+                        if (System.Windows.Clipboard.ContainsImage())
+                        {
+                            var image = System.Windows.Clipboard.GetImage();
+                            if (image == null) return null;
+
+                            return await CreateImageEntryAsync(image);
+                        }
+
+                        return null;
+                    });
+                }
+                catch (System.Runtime.InteropServices.COMException ex) when (ex.ErrorCode == unchecked((int)0x800401D0))
+                {
+                    // CLIPBRD_E_CANT_OPEN - 剪贴板被其他程序锁定，等待后重试
+                    if (attempt < maxRetries - 1)
                     {
-                        var image = System.Windows.Clipboard.GetImage();
-                        if (image == null) return null;
-
-                        return await CreateImageEntryAsync(image);
+                        System.Diagnostics.Debug.WriteLine($"[MainVM] 剪贴板被锁定，第 {attempt + 1} 次重试...");
+                        await Task.Delay(baseDelayMs * (attempt + 1));
                     }
-
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[MainVM] 剪贴板锁定，已达最大重试次数");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[MainVM] 采集剪贴板异常: {ex.Message}");
                     return null;
-                });
+                }
             }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[MainVM] 采集剪贴板异常: {ex.Message}");
-                return null;
-            }
+            return null;
         }
 
         private async Task<ClipboardEntry> CreateImageEntryAsync(BitmapSource image)
