@@ -201,7 +201,7 @@ struct UpdatePromptView: View {
         
         Task {
             do {
-                let dmgURL = try await UpdateService.shared.downloadUpdate(url: urlString) { progress in
+                let pkgURL = try await UpdateService.shared.downloadUpdate(url: urlString) { progress in
                     DispatchQueue.main.async {
                         downloadProgress = progress
                     }
@@ -209,7 +209,7 @@ struct UpdatePromptView: View {
                 
                 await MainActor.run {
                     isDownloading = false
-                    UpdateService.shared.openDMG(dmgURL)
+                    UpdateService.shared.openPKG(pkgURL)
                     onUpdate()
                 }
             } catch {

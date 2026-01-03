@@ -70,7 +70,66 @@ class UpdateService {
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         
         let (data, _) = try await URLSession.shared.data(for: request)
-        return try JSONDecoder().decode(VersionCheckResponse.self, from: data)
+        var response = try JSONDecoder().decode(VersionCheckResponse.self, from: data)
+        
+        // 如果有更新，检查下载文件是否实际存在
+        if response.updateAvailable,
+           let baseDownloadUrl = response.downloadUrl,
+           let latestVersion = response.latestVersion {
+            let fullDownloadUrl = buildDownloadUrl(baseUrl: baseDownloadUrl, version: latestVersion)
+            let fileExists = await checkFileExists(url: fullDownloadUrl)
+            
+            if !fileExists {
+                print("Update file not available yet, skipping update notification")
+                // 返回一个表示无更新的响应
+                return VersionCheckResponse(
+                    updateAvailable: false,
+                    latestVersion: nil,
+                    isMandatory: nil,
+                    releaseNotes: nil,
+                    downloadUrl: nil
+                )
+            }
+            
+            // 创建新的响应，包含完整的下载URL
+            response = VersionCheckResponse(
+                updateAvailable: response.updateAvailable,
+                latestVersion: response.latestVersion,
+                isMandatory: response.isMandatory,
+                releaseNotes: response.releaseNotes,
+                downloadUrl: fullDownloadUrl
+            )
+        }
+        
+        return response
+    }
+    
+    /// 构建完整的下载URL（基于base URL和版本号）
+    private func buildDownloadUrl(baseUrl: String, version: String) -> String {
+        // 确保base URL末尾没有斜杠
+        let normalizedBaseUrl = baseUrl.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        return "\(normalizedBaseUrl)/Pastee-\(version).pkg"
+    }
+    
+    /// 检查下载文件是否存在（HEAD请求）
+    private func checkFileExists(url: String) async -> Bool {
+        guard let fileURL = URL(string: url) else { return false }
+        
+        var request = URLRequest(url: fileURL)
+        request.httpMethod = "HEAD"
+        
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            if let httpResponse = response as? HTTPURLResponse {
+                let exists = httpResponse.statusCode == 200
+                print("File \(exists ? "exists" : "not found") (\(httpResponse.statusCode)): \(url)")
+                return exists
+            }
+            return false
+        } catch {
+            print("Check file exists error: \(error)")
+            return false
+        }
     }
     
     // MARK: - Download Update
@@ -92,7 +151,8 @@ class UpdateService {
         return destURL
     }
     
-    func openDMG(_ url: URL) {
+    /// 打开 PKG 安装包（系统会自动运行安装程序）
+    func openPKG(_ url: URL) {
         NSWorkspace.shared.open(url)
     }
     
@@ -139,10 +199,10 @@ class UpdateService {
         guard let downloadUrl = response.downloadUrl else { return }
         
         do {
-            let dmgURL = try await downloadUpdate(url: downloadUrl) { progress in
+            let pkgURL = try await downloadUpdate(url: downloadUrl) { progress in
                 print("Download progress: \(progress * 100)%")
             }
-            openDMG(dmgURL)
+            openPKG(pkgURL)
         } catch {
             print("Download failed: \(error)")
         }
