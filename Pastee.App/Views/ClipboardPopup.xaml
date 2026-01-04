@@ -244,14 +244,16 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     
-                    <!-- Brand Logo -->
-                    <TextBlock Grid.Row="0" 
-                               Text="Pastee" 
-                               Foreground="{StaticResource AccentBrush}" 
-                               FontSize="22" 
-                               FontWeight="Bold"
-                               FontFamily="{StaticResource MainFont}"
-                               Margin="0,0,0,20"/>
+                    <!-- Brand Logo (Draggable) -->
+                    <Border Grid.Row="0" Background="Transparent" Cursor="SizeAll" Margin="-12,-16,-12,0" Padding="12,16,12,0"
+                            MouseLeftButtonDown="OnHeaderMouseDown">
+                        <TextBlock Text="Pastee" 
+                                   Foreground="{StaticResource AccentBrush}" 
+                                   FontSize="22" 
+                                   FontWeight="Bold"
+                                   FontFamily="{StaticResource MainFont}"
+                                   Margin="0,0,0,20"/>
+                    </Border>
                     
                     <StackPanel Grid.Row="1">
                         <!-- Main Navigation -->
@@ -437,7 +439,8 @@
                 
                 <!-- Top Right Actions: Clear Drafts, Search, Refresh, Close -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" 
-                            Margin="0,0,0,0" Panel.ZIndex="10">
+                            Margin="0,0,0,0" Panel.ZIndex="10" Background="Transparent"
+                            MouseLeftButtonDown="OnHeaderMouseDown" Cursor="SizeAll">
                     <!-- Clear Drafts Button (only visible in drafts category) -->
                     <Button x:Name="ClearDraftsButton"
                             Content="🗑 Clear All"
