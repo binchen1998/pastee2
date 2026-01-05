@@ -2,7 +2,7 @@
 ; Download Inno Setup from: https://jrsoftware.org/isdl.php
 
 #define MyAppName "Pastee"
-#define MyAppVersion "3.7.0"
+#define MyAppVersion "3.8.0"
 #define MyAppPublisher "Pastee"
 #define MyAppURL "https://pastee.im"
 #define MyAppExeName "Pastee.App.exe"

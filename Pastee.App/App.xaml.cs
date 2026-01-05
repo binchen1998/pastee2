@@ -59,12 +59,13 @@ namespace Pastee.App
             _pipeCts = new CancellationTokenSource();
             OAuthHelper.StartPipeServer(OnOAuthTokenReceived, _pipeCts.Token);
 
-            // 1. 尝试自动登录
-            bool isAuthenticated = await _authService.CheckAuthAsync();
+            // 1. 检查本地是否有保存的 token（不发送网络请求，支持离线使用）
+            var token = await _authService.GetSavedTokenAsync();
+            bool hasToken = !string.IsNullOrEmpty(token);
 
-            if (!isAuthenticated)
+            if (!hasToken)
             {
-                // 2. 显示登录窗口
+                // 2. 没有 token，显示登录窗口
                 _loginWindow = new LoginWindow();
                 if (_loginWindow.ShowDialog() != true)
                 {
@@ -73,10 +74,11 @@ namespace Pastee.App
                     return;
                 }
                 _loginWindow = null;
+                // 登录成功后重新获取 token
+                token = await _authService.GetSavedTokenAsync();
             }
 
-            // 3. 登录成功，获取 Token 并显示主窗口
-            var token = await _authService.GetSavedTokenAsync();
+            // 3. 有 token，直接显示主窗口（网络错误时会显示缓存数据）
             var mainWindow = new MainWindow(token ?? string.Empty);
             mainWindow.Show();
         }
