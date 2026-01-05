@@ -39,6 +39,13 @@
                            FontWeight="SemiBold"
                            VerticalAlignment="Center"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <!-- Save Button -->
+                    <Button Style="{StaticResource IconButtonStyle}"
+                            Content="💾" 
+                            FontSize="14"
+                            Width="28" Height="28"
+                            Click="SaveButton_Click"
+                            ToolTip="Save Image"/>
                     <!-- Copy Button -->
                     <Button Style="{StaticResource IconButtonStyle}"
                             Content="📋" 

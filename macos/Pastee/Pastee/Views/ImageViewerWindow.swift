@@ -28,6 +28,14 @@ struct ImageViewerView: View {
                     
                     Spacer()
                     
+                    Button(action: saveImage) {
+                        Text("💾")
+                            .font(.system(size: 14))
+                            .frame(width: 28, height: 28)
+                    }
+                    .buttonStyle(IconButtonStyle())
+                    .help("Save Image")
+                    
                     Button(action: copyImage) {
                         Text("📋")
                             .font(.system(size: 14))
@@ -118,6 +126,56 @@ struct ImageViewerView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             showToast = false
         }
+    }
+    
+    private func saveImage() {
+        guard let data = imageData else { return }
+        
+        let savePanel = NSSavePanel()
+        savePanel.title = "Save Image"
+        savePanel.nameFieldStringValue = "Pastee_Image_\(formattedDate()).png"
+        savePanel.allowedContentTypes = [.png, .jpeg]
+        savePanel.canCreateDirectories = true
+        
+        savePanel.begin { response in
+            if response == .OK, let url = savePanel.url {
+                do {
+                    // 根据扩展名决定格式
+                    let ext = url.pathExtension.lowercased()
+                    if ext == "jpg" || ext == "jpeg" {
+                        if let nsImage = NSImage(data: data),
+                           let tiffData = nsImage.tiffRepresentation,
+                           let bitmap = NSBitmapImageRep(data: tiffData),
+                           let jpegData = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.95]) {
+                            try jpegData.write(to: url)
+                        }
+                    } else {
+                        // 默认保存为 PNG
+                        if let nsImage = NSImage(data: data),
+                           let tiffData = nsImage.tiffRepresentation,
+                           let bitmap = NSBitmapImageRep(data: tiffData),
+                           let pngData = bitmap.representation(using: .png, properties: [:]) {
+                            try pngData.write(to: url)
+                        }
+                    }
+                    
+                    DispatchQueue.main.async {
+                        self.showToast = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            self.showToast = false
+                        }
+                    }
+                } catch {
+                    print("Failed to save image: \(error)")
+                }
+            }
+        }
+    }
+    
+    private func formattedDate() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd_HHmmss"
+        return formatter.string(from: Date())
     }
     
     private func closeWindow() {

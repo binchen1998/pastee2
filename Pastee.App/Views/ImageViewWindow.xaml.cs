@@ -1,7 +1,9 @@
 using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using Microsoft.Win32;
 using Pastee.App.Infrastructure;
 using Pastee.App.Models;
 
@@ -106,6 +108,65 @@ namespace Pastee.App.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[ImageViewWindow] 复制失败: {ex.Message}");
+            }
+        }
+
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_bitmap == null) return;
+
+                var saveDialog = new SaveFileDialog
+                {
+                    Title = "Save Image",
+                    Filter = "PNG Image|*.png|JPEG Image|*.jpg|All Files|*.*",
+                    DefaultExt = ".png",
+                    FileName = $"Pastee_Image_{DateTime.Now:yyyyMMdd_HHmmss}"
+                };
+
+                if (saveDialog.ShowDialog() == true)
+                {
+                    var filePath = saveDialog.FileName;
+                    var extension = Path.GetExtension(filePath).ToLowerInvariant();
+
+                    BitmapEncoder encoder;
+                    switch (extension)
+                    {
+                        case ".jpg":
+                        case ".jpeg":
+                            encoder = new JpegBitmapEncoder { QualityLevel = 95 };
+                            break;
+                        default:
+                            encoder = new PngBitmapEncoder();
+                            break;
+                    }
+
+                    encoder.Frames.Add(BitmapFrame.Create(_bitmap));
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        encoder.Save(stream);
+                    }
+
+                    // 视觉反馈
+                    TitleText.Text = "Saved!";
+                    var timer = new System.Windows.Threading.DispatcherTimer
+                    {
+                        Interval = TimeSpan.FromSeconds(1)
+                    };
+                    timer.Tick += (s, args) =>
+                    {
+                        TitleText.Text = "Image Viewer";
+                        timer.Stop();
+                    };
+                    timer.Start();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ImageViewWindow] 保存失败: {ex.Message}");
+                MessageBox.Show($"Failed to save image: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }
