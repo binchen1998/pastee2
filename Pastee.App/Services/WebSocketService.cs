@@ -223,19 +223,26 @@ namespace Pastee.App.Services
         {
             StopHeartbeat();
             
-            if (_webSocket != null)
+            // 使用局部变量避免多线程竞态条件
+            var socket = _webSocket;
+            _webSocket = null;
+            
+            if (socket != null)
             {
                 try
                 {
-                    if (_webSocket.State == WebSocketState.Open)
+                    if (socket.State == WebSocketState.Open)
                     {
-                        await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
+                        await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
                     }
                 }
                 catch { }
                 
-                _webSocket.Dispose();
-                _webSocket = null;
+                try
+                {
+                    socket.Dispose();
+                }
+                catch { }
             }
             
             Disconnected?.Invoke(this, EventArgs.Empty);
