@@ -998,6 +998,9 @@ namespace Pastee.App.ViewModels
                     {
                         System.Diagnostics.Debug.WriteLine($"[MainVM] 上传成功: {entry.Id}");
                         
+                        // 保存原始 ID 用于从本地草稿中删除
+                        var originalId = entry.Id;
+                        
                         // 上传成功，如果是在草稿箱中，需要从本地列表移除
                         if (SelectedCategory == "drafts")
                         {
@@ -1008,13 +1011,14 @@ namespace Pastee.App.ViewModels
                         entry.IsUploading = false;
                         entry.UploadFailed = false;
                         
+                        // 先用原始 ID 从本地草稿中删除
+                        await RemoveFromLocalDraftsAsync(entry, originalId);
+                        
                         // 如果 ID 发生了变化（后端分配了新 ID），则更新 ID
                         if (result.Item != null && entry.Id != result.Item.Id)
                         {
                             entry.Id = result.Item.Id;
                         }
-                        
-                        await RemoveFromLocalDraftsAsync(entry);
                     }
                 }
                 else
@@ -1049,14 +1053,16 @@ namespace Pastee.App.ViewModels
             await _dataStore.SaveAsync(localItems);
         }
 
-        private async Task RemoveFromLocalDraftsAsync(ClipboardEntry entry)
+        private async Task RemoveFromLocalDraftsAsync(ClipboardEntry entry, string? originalId = null)
         {
+            var idToRemove = originalId ?? entry.Id;
             var localItems = (await _dataStore.LoadAsync()).ToList();
-            var existing = localItems.FirstOrDefault(i => i.Id == entry.Id);
+            var existing = localItems.FirstOrDefault(i => i.Id == idToRemove);
             if (existing != null)
             {
                 localItems.Remove(existing);
                 await _dataStore.SaveAsync(localItems);
+                System.Diagnostics.Debug.WriteLine($"[MainVM] 已从本地草稿中删除: {idToRemove}");
             }
         }
 
@@ -1182,35 +1188,35 @@ namespace Pastee.App.ViewModels
 
             for (int attempt = 0; attempt < maxRetries; attempt++)
             {
-                try
+            try
+            {
+                // 剪贴板必须在 UI 线程访问
+                return await Application.Current.Dispatcher.Invoke(async () =>
                 {
-                    // 剪贴板必须在 UI 线程访问
-                    return await Application.Current.Dispatcher.Invoke(async () =>
+                    if (System.Windows.Clipboard.ContainsText())
                     {
-                        if (System.Windows.Clipboard.ContainsText())
+                        var text = System.Windows.Clipboard.GetText();
+                        if (string.IsNullOrWhiteSpace(text)) return null;
+
+                        return new ClipboardEntry
                         {
-                            var text = System.Windows.Clipboard.GetText();
-                            if (string.IsNullOrWhiteSpace(text)) return null;
+                            ContentType = "text",
+                            Content = text.Trim(),
+                            CreatedAt = DateTimeOffset.Now
+                        };
+                    }
 
-                            return new ClipboardEntry
-                            {
-                                ContentType = "text",
-                                Content = text.Trim(),
-                                CreatedAt = DateTimeOffset.Now
-                            };
-                        }
+                    if (System.Windows.Clipboard.ContainsImage())
+                    {
+                        var image = System.Windows.Clipboard.GetImage();
+                        if (image == null) return null;
 
-                        if (System.Windows.Clipboard.ContainsImage())
-                        {
-                            var image = System.Windows.Clipboard.GetImage();
-                            if (image == null) return null;
+                        return await CreateImageEntryAsync(image);
+                    }
 
-                            return await CreateImageEntryAsync(image);
-                        }
-
-                        return null;
-                    });
-                }
+                    return null;
+                });
+            }
                 catch (System.Runtime.InteropServices.COMException ex) when (ex.ErrorCode == unchecked((int)0x800401D0))
                 {
                     // CLIPBRD_E_CANT_OPEN - 剪贴板被其他程序锁定，等待后重试
@@ -1224,11 +1230,11 @@ namespace Pastee.App.ViewModels
                         System.Diagnostics.Debug.WriteLine($"[MainVM] 剪贴板锁定，已达最大重试次数");
                     }
                 }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[MainVM] 采集剪贴板异常: {ex.Message}");
-                    return null;
-                }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MainVM] 采集剪贴板异常: {ex.Message}");
+                return null;
+            }
             }
             return null;
         }

@@ -70,6 +70,7 @@
                                                    FontFamily="{StaticResource MainFont}"
                                                    FontSize="13"
                                                    TextTrimming="CharacterEllipsis"
+                                                   MinHeight="34"
                                                    MaxHeight="40"
                                                    TextWrapping="Wrap"/>
                                     </Setter.Value>
@@ -150,24 +151,18 @@
                         </StackPanel>
                     </Border>
                     
-                    <!-- Upload Failed Indicator with Retry -->
+                    <!-- Upload Failed Indicator with Retry (entire area clickable) -->
                     <Border x:Name="UploadFailedIndicator" 
                             HorizontalAlignment="Left" VerticalAlignment="Top"
                             Background="#CC8B0000" CornerRadius="4" Padding="6,3" Margin="-4,-4,0,0"
-                            Visibility="Collapsed">
+                            Visibility="Collapsed"
+                            Cursor="Hand"
+                            ToolTip="Click to Retry Upload"
+                            PreviewMouseLeftButtonDown="UploadFailedIndicator_PreviewMouseLeftButtonDown">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="⚠" FontSize="10" Foreground="#F38BA8" Margin="0,0,4,0"/>
                             <TextBlock Text="Failed" FontSize="10" Foreground="White" Margin="0,0,6,0"/>
-                            <Button Content="↻" 
-                                    FontSize="10" 
-                                    Padding="4,0"
-                                    Background="Transparent" 
-                                    BorderThickness="0"
-                                    Foreground="White"
-                                    Cursor="Hand"
-                                    Command="{Binding DataContext.RetryUploadCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                    CommandParameter="{Binding}"
-                                    ToolTip="Retry Upload"/>
+                            <TextBlock Text="↻" FontSize="10" Foreground="White"/>
                         </StackPanel>
                     </Border>
 
@@ -248,11 +243,11 @@
                     <Border Grid.Row="0" Background="Transparent" Cursor="SizeAll" Margin="-12,-16,-12,0" Padding="12,16,12,0"
                             MouseLeftButtonDown="OnHeaderMouseDown">
                         <TextBlock Text="Pastee" 
-                                   Foreground="{StaticResource AccentBrush}" 
-                                   FontSize="22" 
-                                   FontWeight="Bold"
-                                   FontFamily="{StaticResource MainFont}"
-                                   Margin="0,0,0,20"/>
+                               Foreground="{StaticResource AccentBrush}" 
+                               FontSize="22" 
+                               FontWeight="Bold"
+                               FontFamily="{StaticResource MainFont}"
+                               Margin="0,0,0,20"/>
                     </Border>
                     
                     <StackPanel Grid.Row="1">

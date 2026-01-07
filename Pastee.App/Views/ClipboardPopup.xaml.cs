@@ -289,8 +289,9 @@ namespace Pastee.App.Views
 
             var element = e.OriginalSource as FrameworkElement;
             bool clickedOnButton = false;
+            bool clickedOnUploadFailed = false;
 
-            // 向上追溯，检查是否点击了按钮或其子元素
+            // 向上追溯，检查是否点击了按钮或其子元素，或者 UploadFailedIndicator
             var temp = element;
             while (temp != null)
             {
@@ -299,11 +300,16 @@ namespace Pastee.App.Views
                     clickedOnButton = true;
                     break;
                 }
+                if (temp.Name == "UploadFailedIndicator")
+                {
+                    clickedOnUploadFailed = true;
+                    break;
+                }
                 if (temp.Name == "ItemBorder") break; // 到达卡片边界，停止向上找按钮
                 temp = VisualTreeHelper.GetParent(temp) as FrameworkElement;
             }
 
-            if (clickedOnButton) return;
+            if (clickedOnButton || clickedOnUploadFailed) return;
 
             // 重新寻找 DataContext
             element = e.OriginalSource as FrameworkElement;
@@ -524,6 +530,15 @@ namespace Pastee.App.Views
                 {
                     _viewModel.AddToCategoryCommand.Execute(new object[] { item, category });
                 }
+            }
+        }
+
+        private void UploadFailedIndicator_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.DataContext is ClipboardEntry item)
+            {
+                _viewModel.RetryUploadCommand.Execute(item);
+                e.Handled = true; // Prevent event from bubbling to item click
             }
         }
 

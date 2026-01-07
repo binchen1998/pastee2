@@ -58,42 +58,6 @@ namespace Pastee.App.Services
         }
 
         /// <summary>
-        /// 构建完整的下载URL（基于base URL和版本号）
-        /// </summary>
-        private static string BuildDownloadUrl(string baseUrl, string version)
-        {
-            // 确保base URL末尾没有斜杠
-            var normalizedBaseUrl = baseUrl.TrimEnd('/');
-            return $"{normalizedBaseUrl}/Pastee-{version}.exe";
-        }
-
-        /// <summary>
-        /// 检查下载文件是否存在（HEAD请求）
-        /// </summary>
-        private async Task<bool> CheckFileExistsAsync(string url, CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                var request = new HttpRequestMessage(HttpMethod.Head, url);
-                var response = await _client.SendAsync(request, cancellationToken);
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    Debug.WriteLine($"[UpdateService] File exists: {url}");
-                    return true;
-                }
-                
-                Debug.WriteLine($"[UpdateService] File not found ({response.StatusCode}): {url}");
-                return false;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[UpdateService] Check file exists error: {ex.Message}");
-                return false;
-            }
-        }
-
-        /// <summary>
         /// 检查更新
         /// </summary>
         public async Task<VersionCheckResponse?> CheckForUpdateAsync(CancellationToken cancellationToken = default)
@@ -128,23 +92,6 @@ namespace Pastee.App.Services
                 var result = JsonSerializer.Deserialize<VersionCheckResponse>(responseJson);
 
                 Debug.WriteLine($"[UpdateService] Check result: UpdateAvailable={result?.UpdateAvailable}, LatestVersion={result?.LatestVersion}");
-
-                // 如果有更新，检查下载文件是否实际存在
-                if (result?.UpdateAvailable == true && !string.IsNullOrEmpty(result.DownloadUrl) && !string.IsNullOrEmpty(result.LatestVersion))
-                {
-                    var fullDownloadUrl = BuildDownloadUrl(result.DownloadUrl, result.LatestVersion);
-                    var fileExists = await CheckFileExistsAsync(fullDownloadUrl, cancellationToken);
-                    
-                    if (!fileExists)
-                    {
-                        Debug.WriteLine($"[UpdateService] Update file not available yet, skipping update notification");
-                        return null;
-                    }
-                    
-                    // 更新下载URL为完整路径
-                    result.DownloadUrl = fullDownloadUrl;
-                }
-
                 return result;
             }
             catch (Exception ex)
