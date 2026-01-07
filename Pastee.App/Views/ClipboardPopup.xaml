@@ -111,35 +111,6 @@
                                    FontSize="10"/>
                     </Border>
 
-                    <!-- Important (Bookmark) Toggle (Hover Only) -->
-                    <Button x:Name="BookmarkButton"
-                            HorizontalAlignment="Right" VerticalAlignment="Top"
-                            Background="Transparent" BorderThickness="0"
-                            Command="{Binding DataContext.ToggleBookmarkCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                            CommandParameter="{Binding}"
-                            Cursor="Hand"
-                            Margin="0,-5,-5,0"
-                            Visibility="Hidden">
-                        <TextBlock FontSize="18">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Text" Value="♡"/>
-                                    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsBookmarked}" Value="True">
-                                            <Setter Property="Text" Value="❤"/>
-                                            <Setter Property="Foreground" Value="{StaticResource DeleteBrush}"/>
-                                            <Setter Property="FontSize" Value="15"/>
-                                        </DataTrigger>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter Property="Foreground" Value="{StaticResource DeleteBrush}"/>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </Button>
-
                     <!-- Upload Status Indicator -->
                     <Border x:Name="UploadingIndicator" 
                             HorizontalAlignment="Left" VerticalAlignment="Top"
@@ -192,6 +163,30 @@
                         <Button Content="🗑" Style="{StaticResource DeleteButtonStyle}"
                                 Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                 CommandParameter="{Binding}"/>
+                        <!-- Bookmark Button -->
+                        <Button x:Name="BookmarkButton"
+                                Style="{StaticResource IconButtonStyle}"
+                                Command="{Binding DataContext.ToggleBookmarkCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding}"
+                                ToolTip="Toggle Bookmark">
+                            <TextBlock FontSize="19">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="♡"/>
+                                        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsBookmarked}" Value="True">
+                                                <Setter Property="Text" Value="❤"/>
+                                                <Setter Property="Foreground" Value="{StaticResource DeleteBrush}"/>
+                                            </DataTrigger>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource DeleteBrush}"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Button>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -199,7 +194,6 @@
                 <Trigger Property="IsMouseOver" Value="True" SourceName="ItemBorder">
                     <Setter TargetName="ActionButtons" Property="Visibility" Value="Visible"/>
                     <Setter TargetName="TimeInfo" Property="Visibility" Value="Visible"/>
-                    <Setter TargetName="BookmarkButton" Property="Visibility" Value="Visible"/>
                 </Trigger>
                 <DataTrigger Binding="{Binding ContentType}" Value="image">
                     <Setter TargetName="EditButton" Property="Visibility" Value="Collapsed"/>

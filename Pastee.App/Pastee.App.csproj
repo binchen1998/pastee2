@@ -8,7 +8,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     
     <!-- 版本号 -->
-    <Version>3.8.0</Version>
+    <Version>3.8.1</Version>
     
     <!-- 程序图标 -->
     <ApplicationIcon>pastee.ico</ApplicationIcon>
