@@ -82,6 +82,9 @@ class PopupWindow: NSPanel {
     private var localMouseMonitor: Any?
     private var globalMouseMonitor: Any?
     
+    // 光标管理：跟踪是否已经 push 了自定义光标
+    private var hasPushedCursor = false
+    
     // 允许成为key窗口以接收键盘事件，但不成为主窗口
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
@@ -155,6 +158,13 @@ class PopupWindow: NSPanel {
             object: self
         )
         
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowDidResignKey),
+            name: NSWindow.didResignKeyNotification,
+            object: self
+        )
+        
         // 设置本地鼠标事件监控器，确保即使焦点丢失后也能正确处理边缘检测
         setupLocalMouseMonitor()
     }
@@ -186,7 +196,7 @@ class PopupWindow: NSPanel {
             } else if !self.isResizing {
                 // 鼠标移出窗口范围时，恢复默认光标
                 self.currentResizeEdge = .none
-                NSCursor.arrow.set()
+                self.resetCursorToArrow()
             }
         }
         
@@ -230,29 +240,54 @@ class PopupWindow: NSPanel {
     
     /// 根据边缘设置光标
     private func updateCursor(for edge: ResizeEdge) {
+        // 确定目标光标
+        let targetCursor: NSCursor
         switch edge {
         case .left, .right:
-            NSCursor.resizeLeftRight.set()
+            targetCursor = NSCursor.resizeLeftRight
         case .top, .bottom:
-            NSCursor.resizeUpDown.set()
+            targetCursor = NSCursor.resizeUpDown
         case .topLeft, .bottomRight:
-            // macOS 没有内置的对角线光标，使用箭头
-            NSCursor.crosshair.set()
+            targetCursor = NSCursor.crosshair
         case .topRight, .bottomLeft:
-            NSCursor.crosshair.set()
+            targetCursor = NSCursor.crosshair
         case .none:
-            NSCursor.arrow.set()
+            targetCursor = NSCursor.arrow
         default:
             // 组合边缘（角落）
             if edge.contains(.left) || edge.contains(.right) {
                 if edge.contains(.top) || edge.contains(.bottom) {
-                    NSCursor.crosshair.set()
+                    targetCursor = NSCursor.crosshair
                 } else {
-                    NSCursor.resizeLeftRight.set()
+                    targetCursor = NSCursor.resizeLeftRight
                 }
             } else {
-                NSCursor.resizeUpDown.set()
+                targetCursor = NSCursor.resizeUpDown
             }
+        }
+        
+        // 使用 push/pop 来强制更新光标
+        if edge != .none {
+            // 需要显示 resize 光标
+            if hasPushedCursor {
+                NSCursor.pop()
+            }
+            targetCursor.push()
+            hasPushedCursor = true
+        } else {
+            // 恢复默认光标
+            if hasPushedCursor {
+                NSCursor.pop()
+                hasPushedCursor = false
+            }
+        }
+    }
+    
+    /// 重置光标为箭头（确保正确 pop 之前 push 的光标）
+    private func resetCursorToArrow() {
+        if hasPushedCursor {
+            NSCursor.pop()
+            hasPushedCursor = false
         }
     }
     
@@ -340,7 +375,7 @@ class PopupWindow: NSPanel {
         if isResizing {
             isResizing = false
             currentResizeEdge = .none
-            NSCursor.arrow.set()
+            resetCursorToArrow()
             saveFrame()
         } else {
             super.mouseUp(with: event)
@@ -349,7 +384,7 @@ class PopupWindow: NSPanel {
     
     override func mouseExited(with event: NSEvent) {
         if !isResizing {
-            NSCursor.arrow.set()
+            resetCursorToArrow()
         }
         super.mouseExited(with: event)
     }
@@ -363,9 +398,16 @@ class PopupWindow: NSPanel {
         // 强制更新 contentView 的 tracking areas
         contentHostingView?.updateTrackingAreas()
         
-        // 重置光标状态
+        // 重置光标状态（系统在焦点切换时可能已经重置了光标栈）
         currentResizeEdge = .none
-        NSCursor.arrow.set()
+        hasPushedCursor = false  // 重置状态，因为系统可能已经清空了光标栈
+    }
+    
+    @objc private func windowDidResignKey(_ notification: Notification) {
+        // 窗口失去焦点时，重置光标状态
+        // 系统会在焦点切换时自动处理光标，我们只需要重置我们的状态
+        currentResizeEdge = .none
+        hasPushedCursor = false
     }
     
     override func becomeKey() {
@@ -516,4 +558,5 @@ class PopupWindow: NSPanel {
         }
     }
 }
+
 
