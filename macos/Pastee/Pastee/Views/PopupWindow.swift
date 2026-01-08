@@ -9,8 +9,10 @@ import SwiftUI
 import AppKit
 import Carbon.HIToolbox
 
-// 自定义HostingView：允许第一次点击直接传递到控件，透明背景
+// 自定义HostingView：允许第一次点击直接传递到控件，透明背景，并设置边缘光标
 class FirstClickHostingView<Content: View>: NSHostingView<Content> {
+    private let edgeThreshold: CGFloat = 6  // 边缘检测阈值
+    
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
         return true  // 关键：接受第一次鼠标点击
     }
@@ -19,6 +21,30 @@ class FirstClickHostingView<Content: View>: NSHostingView<Content> {
         super.viewDidMoveToWindow()
         // 确保背景透明
         self.layer?.backgroundColor = .clear
+    }
+    
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        
+        let bounds = self.bounds
+        
+        // 左边缘
+        addCursorRect(NSRect(x: 0, y: edgeThreshold, width: edgeThreshold, height: bounds.height - edgeThreshold * 2), cursor: .resizeLeftRight)
+        
+        // 右边缘
+        addCursorRect(NSRect(x: bounds.width - edgeThreshold, y: edgeThreshold, width: edgeThreshold, height: bounds.height - edgeThreshold * 2), cursor: .resizeLeftRight)
+        
+        // 上边缘
+        addCursorRect(NSRect(x: edgeThreshold, y: bounds.height - edgeThreshold, width: bounds.width - edgeThreshold * 2, height: edgeThreshold), cursor: .resizeUpDown)
+        
+        // 下边缘
+        addCursorRect(NSRect(x: edgeThreshold, y: 0, width: bounds.width - edgeThreshold * 2, height: edgeThreshold), cursor: .resizeUpDown)
+        
+        // 四个角落
+        addCursorRect(NSRect(x: 0, y: bounds.height - edgeThreshold, width: edgeThreshold, height: edgeThreshold), cursor: .crosshair)
+        addCursorRect(NSRect(x: bounds.width - edgeThreshold, y: bounds.height - edgeThreshold, width: edgeThreshold, height: edgeThreshold), cursor: .crosshair)
+        addCursorRect(NSRect(x: 0, y: 0, width: edgeThreshold, height: edgeThreshold), cursor: .crosshair)
+        addCursorRect(NSRect(x: bounds.width - edgeThreshold, y: 0, width: edgeThreshold, height: edgeThreshold), cursor: .crosshair)
     }
 }
 
