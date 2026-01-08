@@ -39,7 +39,8 @@ class PopupWindow: NSPanel {
             contentRect: initialRect,
             // 使用 titled + fullSizeContentView 来获得系统原生的 resize 支持
             // 同时通过隐藏标题栏来保持现有外观
-            styleMask: [.titled, .resizable, .fullSizeContentView, .nonactivatingPanel, .utilityWindow],
+            // 注意：移除 nonactivatingPanel 以让系统正确处理 resize 光标
+            styleMask: [.titled, .resizable, .fullSizeContentView, .utilityWindow],
             backing: .buffered,
             defer: false
         )
