@@ -54,16 +54,33 @@ class FirstClickHostingView<Content: View>: NSHostingView<Content> {
         
         // 创建新的跟踪区域，覆盖整个视图
         // activeAlways 确保即使窗口不是 key window 也能接收事件
+        // owner 设置为 self，然后在 mouseMoved 中转发给窗口
         trackingArea = NSTrackingArea(
             rect: bounds,
             options: [.mouseMoved, .mouseEnteredAndExited, .activeAlways, .inVisibleRect],
-            owner: window,  // 事件发送给窗口处理
+            owner: self,  // 改为 self，由视图自己处理然后转发
             userInfo: nil
         )
         
         if let area = trackingArea {
             addTrackingArea(area)
         }
+    }
+    
+    override func mouseMoved(with event: NSEvent) {
+        // 转发鼠标移动事件给窗口处理
+        if let popupWindow = window as? PopupWindow {
+            popupWindow.handleMouseMovedFromContentView(event)
+        }
+        super.mouseMoved(with: event)
+    }
+    
+    override func mouseEntered(with event: NSEvent) {
+        // 鼠标进入时也触发一次
+        if let popupWindow = window as? PopupWindow {
+            popupWindow.handleMouseMovedFromContentView(event)
+        }
+        super.mouseEntered(with: event)
     }
 }
 
@@ -84,6 +101,9 @@ class PopupWindow: NSPanel {
     
     // 光标管理：跟踪是否已经 push 了自定义光标
     private var hasPushedCursor = false
+    
+    // 定时器：定期检查鼠标位置（作为 tracking area 失效时的备用方案）
+    private var cursorUpdateTimer: Timer?
     
     // 允许成为key窗口以接收键盘事件，但不成为主窗口
     override var canBecomeKey: Bool { true }
@@ -167,6 +187,31 @@ class PopupWindow: NSPanel {
         
         // 设置本地鼠标事件监控器，确保即使焦点丢失后也能正确处理边缘检测
         setupLocalMouseMonitor()
+        
+        // 启动定时器作为备用方案，定期检查鼠标位置
+        startCursorUpdateTimer()
+    }
+    
+    private func startCursorUpdateTimer() {
+        // 停止旧的定时器
+        cursorUpdateTimer?.invalidate()
+        
+        // 创建新的定时器，每 0.05 秒检查一次鼠标位置
+        cursorUpdateTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
+            guard let self = self, self.isVisible else { return }
+            
+            let mouseLocation = NSEvent.mouseLocation
+            let windowFrame = self.frame
+            
+            // 只在鼠标在窗口范围内时处理
+            let expandedFrame = windowFrame.insetBy(dx: -2, dy: -2)
+            if expandedFrame.contains(mouseLocation) {
+                self.handleMouseMovedInternal()
+            } else if !self.isResizing && self.hasPushedCursor {
+                // 鼠标移出窗口，重置光标
+                self.resetCursorToArrow()
+            }
+        }
     }
     
     private func setupLocalMouseMonitor() {
@@ -292,11 +337,29 @@ class PopupWindow: NSPanel {
     }
     
     override func mouseMoved(with event: NSEvent) {
+        handleMouseMovedInternal()
+        super.mouseMoved(with: event)
+    }
+    
+    // 从 contentView 转发的鼠标移动事件
+    func handleMouseMovedFromContentView(_ event: NSEvent) {
+        handleMouseMovedInternal()
+    }
+    
+    // 统一的鼠标移动处理逻辑
+    private func handleMouseMovedInternal() {
         let mouseLocation = NSEvent.mouseLocation
         let edge = detectEdge(at: mouseLocation)
         currentResizeEdge = edge
         updateCursor(for: edge)
-        super.mouseMoved(with: event)
+    }
+    
+    // 重写 sendEvent 来确保捕获所有鼠标移动事件，即使在窗口失去焦点后
+    override func sendEvent(_ event: NSEvent) {
+        if event.type == .mouseMoved {
+            handleMouseMovedInternal()
+        }
+        super.sendEvent(event)
     }
     
     override func mouseDown(with event: NSEvent) {
@@ -418,6 +481,10 @@ class PopupWindow: NSPanel {
     
     deinit {
         NotificationCenter.default.removeObserver(self)
+        
+        // 停止定时器
+        cursorUpdateTimer?.invalidate()
+        cursorUpdateTimer = nil
         
         // 移除鼠标事件监控器
         if let monitor = localMouseMonitor {
