@@ -65,16 +65,15 @@
                             <Style TargetType="ContentControl">
                                 <Setter Property="Content">
                                     <Setter.Value>
-                                        <TextBlock Text="{Binding Content}"
-                                                   Foreground="{StaticResource TextPrimaryBrush}"
-                                                   FontFamily="{StaticResource MainFont}"
-                                                   FontSize="13"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   MinHeight="34"
-                                                   MaxHeight="40"
-                                                   TextWrapping="Wrap"
-                                                   VerticalAlignment="Center"
-                                                   Margin="0,0,0,4"/>
+                                        <Grid MinHeight="34" MaxHeight="40" Margin="0,0,0,4">
+                                            <TextBlock Text="{Binding Content}"
+                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       FontFamily="{StaticResource MainFont}"
+                                                       FontSize="13"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       TextWrapping="Wrap"
+                                                       VerticalAlignment="Center"/>
+                                        </Grid>
                                     </Setter.Value>
                                 </Setter>
                                 <Style.Triggers>
