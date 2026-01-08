@@ -142,6 +142,14 @@ class PopupWindow: NSPanel {
             name: .adjustWindowWidth,
             object: nil
         )
+        
+        // 监听窗口激活/取消激活通知，用于修复鼠标光标状态
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowDidBecomeKey),
+            name: NSWindow.didBecomeKeyNotification,
+            object: self
+        )
     }
     
     // MARK: - 边缘检测与调整大小
@@ -296,6 +304,26 @@ class PopupWindow: NSPanel {
         super.mouseExited(with: event)
     }
     
+    // MARK: - 窗口焦点变化处理
+    
+    @objc private func windowDidBecomeKey(_ notification: Notification) {
+        // 窗口重新获得焦点时，确保鼠标移动事件可以被接收
+        self.acceptsMouseMovedEvents = true
+        
+        // 强制更新 contentView 的 tracking areas
+        contentHostingView?.updateTrackingAreas()
+        
+        // 重置光标状态
+        currentResizeEdge = .none
+        NSCursor.arrow.set()
+    }
+    
+    override func becomeKey() {
+        super.becomeKey()
+        // 确保鼠标移动事件可以被接收
+        self.acceptsMouseMovedEvents = true
+    }
+    
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
@@ -366,6 +394,12 @@ class PopupWindow: NSPanel {
         // 关键：不使用 makeKeyAndOrderFront，不调用 NSApp.activate
         // 使用 orderFrontRegardless 显示窗口但不抢占焦点
         self.orderFrontRegardless()
+        
+        // 确保鼠标移动事件可以被接收
+        self.acceptsMouseMovedEvents = true
+        
+        // 强制更新 tracking areas 以确保边缘调整大小功能正常
+        contentHostingView?.updateTrackingAreas()
     }
     
     func hidePopup() {
