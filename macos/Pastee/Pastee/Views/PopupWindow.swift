@@ -78,6 +78,10 @@ class PopupWindow: NSPanel {
     private var resizeStartFrame: NSRect = .zero
     private var resizeStartMouseLocation: NSPoint = .zero
     
+    // 鼠标事件监控器，用于捕获鼠标移动事件
+    private var localMouseMonitor: Any?
+    private var globalMouseMonitor: Any?
+    
     // 允许成为key窗口以接收键盘事件，但不成为主窗口
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
@@ -150,6 +154,52 @@ class PopupWindow: NSPanel {
             name: NSWindow.didBecomeKeyNotification,
             object: self
         )
+        
+        // 设置本地鼠标事件监控器，确保即使焦点丢失后也能正确处理边缘检测
+        setupLocalMouseMonitor()
+    }
+    
+    private func setupLocalMouseMonitor() {
+        // 移除旧的监控器
+        if let monitor = localMouseMonitor {
+            NSEvent.removeMonitor(monitor)
+            localMouseMonitor = nil
+        }
+        if let monitor = globalMouseMonitor {
+            NSEvent.removeMonitor(monitor)
+            globalMouseMonitor = nil
+        }
+        
+        // 处理鼠标移动的通用逻辑
+        let handleMouseMove: () -> Void = { [weak self] in
+            guard let self = self, self.isVisible else { return }
+            
+            let mouseLocation = NSEvent.mouseLocation
+            let windowFrame = self.frame
+            
+            // 检查鼠标是否在窗口范围内（包括边缘）
+            let expandedFrame = windowFrame.insetBy(dx: -2, dy: -2)
+            if expandedFrame.contains(mouseLocation) {
+                let edge = self.detectEdge(at: mouseLocation)
+                self.currentResizeEdge = edge
+                self.updateCursor(for: edge)
+            } else if !self.isResizing {
+                // 鼠标移出窗口范围时，恢复默认光标
+                self.currentResizeEdge = .none
+                NSCursor.arrow.set()
+            }
+        }
+        
+        // 创建本地事件监控器（当应用是活动应用时）
+        localMouseMonitor = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved]) { event in
+            handleMouseMove()
+            return event
+        }
+        
+        // 创建全局事件监控器（当应用不是活动应用时，用于处理 nonactivatingPanel 的情况）
+        globalMouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved]) { _ in
+            handleMouseMove()
+        }
     }
     
     // MARK: - 边缘检测与调整大小
@@ -326,6 +376,16 @@ class PopupWindow: NSPanel {
     
     deinit {
         NotificationCenter.default.removeObserver(self)
+        
+        // 移除鼠标事件监控器
+        if let monitor = localMouseMonitor {
+            NSEvent.removeMonitor(monitor)
+            localMouseMonitor = nil
+        }
+        if let monitor = globalMouseMonitor {
+            NSEvent.removeMonitor(monitor)
+            globalMouseMonitor = nil
+        }
     }
     
     @objc private func handlePasteNotification() {
