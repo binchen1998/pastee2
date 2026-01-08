@@ -27,6 +27,8 @@ struct ResizeEdge: OptionSet {
 
 // 自定义HostingView：允许第一次点击直接传递到控件，透明背景
 class FirstClickHostingView<Content: View>: NSHostingView<Content> {
+    private var trackingArea: NSTrackingArea?
+    
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
         return true  // 关键：接受第一次鼠标点击
     }
@@ -35,6 +37,33 @@ class FirstClickHostingView<Content: View>: NSHostingView<Content> {
         super.viewDidMoveToWindow()
         // 确保背景透明
         self.layer?.backgroundColor = .clear
+        // 设置鼠标跟踪区域
+        setupTrackingArea()
+    }
+    
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        setupTrackingArea()
+    }
+    
+    private func setupTrackingArea() {
+        // 移除旧的跟踪区域
+        if let existingArea = trackingArea {
+            removeTrackingArea(existingArea)
+        }
+        
+        // 创建新的跟踪区域，覆盖整个视图
+        // activeAlways 确保即使窗口不是 key window 也能接收事件
+        trackingArea = NSTrackingArea(
+            rect: bounds,
+            options: [.mouseMoved, .mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+            owner: window,  // 事件发送给窗口处理
+            userInfo: nil
+        )
+        
+        if let area = trackingArea {
+            addTrackingArea(area)
+        }
     }
 }
 
