@@ -72,7 +72,8 @@
                                                    TextTrimming="CharacterEllipsis"
                                                    MinHeight="34"
                                                    MaxHeight="40"
-                                                   TextWrapping="Wrap"/>
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,0,0,4"/>
                                     </Setter.Value>
                                 </Setter>
                                 <Style.Triggers>
@@ -149,7 +150,7 @@
                     </Border>
 
                     <!-- Hover Actions -->
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" x:Name="ActionButtons" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" x:Name="ActionButtons" Visibility="Collapsed" Margin="0,0,-4,-8">
                         <Button Content="✎" Style="{StaticResource IconButtonStyle}"
                                 Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                 CommandParameter="{Binding}"
@@ -198,6 +199,7 @@
                 <DataTrigger Binding="{Binding ContentType}" Value="image">
                     <Setter TargetName="EditButton" Property="Visibility" Value="Collapsed"/>
                     <Setter TargetName="ViewButton" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="ActionButtons" Property="Margin" Value="0,0,-4,0"/>
                 </DataTrigger>
                 <!-- Upload Status Triggers -->
                 <DataTrigger Binding="{Binding IsUploading}" Value="True">

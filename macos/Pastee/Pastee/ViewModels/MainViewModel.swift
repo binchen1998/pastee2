@@ -32,6 +32,7 @@ class MainViewModel: ObservableObject {
     private var currentPage = 1
     private var hasMore = true
     private var cancellables = Set<AnyCancellable>()
+    private var loadDataTask: Task<Void, Never>?
     
     // MARK: - Computed Properties
     
@@ -115,7 +116,11 @@ class MainViewModel: ObservableObject {
     // MARK: - Data Loading
     
     func loadData() async {
-        guard !isLoading else { return }
+        // 取消之前的请求
+        loadDataTask?.cancel()
+        
+        // 保存请求开始时的状态
+        let requestCategory = selectedCategory
         
         isLoading = true
         loadingText = "Loading..."
@@ -131,6 +136,12 @@ class MainViewModel: ObservableObject {
         
         do {
             let response = try await APIService.shared.getClipboardItems(page: 1, category: selectedCategory)
+            
+            // 检查请求完成后 category 是否已改变
+            guard requestCategory == selectedCategory else {
+                print("[MainVM] Category 已改变，丢弃结果: 请求时=\(requestCategory), 当前=\(selectedCategory)")
+                return
+            }
             
             var loadedItems = response.items
             for i in loadedItems.indices {
@@ -154,7 +165,16 @@ class MainViewModel: ObservableObject {
                     }
                 }
             }
+        } catch is CancellationError {
+            print("[MainVM] 请求被取消")
+            return
         } catch {
+            // 检查请求完成后 category 是否已改变
+            guard requestCategory == selectedCategory else {
+                print("[MainVM] Category 已改变，丢弃错误处理结果")
+                return
+            }
+            
             print("Failed to load items: \(error)")
             
             // 网络错误时从本地缓存加载（仅当是 "all" 分类时才有缓存）
@@ -305,6 +325,9 @@ class MainViewModel: ObservableObject {
     // MARK: - Category Actions
     
     func selectCategory(_ category: String) {
+        // 取消之前的加载任务
+        loadDataTask?.cancel()
+        
         selectedCategory = category
         
         // 立即清空列表，避免显示旧数据
@@ -320,7 +343,7 @@ class MainViewModel: ObservableObject {
             categories[i].isSelected = categories[i].name == category
         }
         
-        Task {
+        loadDataTask = Task {
             await loadData()
         }
     }
@@ -503,6 +526,13 @@ class MainViewModel: ObservableObject {
     private func handleWebSocketEvent(_ event: WebSocketEvent) {
         switch event {
         case .newItem(var item):
+            // 只有在 "all" 视图时才将新条目添加到列表中
+            // 在其他 category 视图时不显示，因为新条目不属于该 category
+            guard selectedCategory == "all" else {
+                print("[WebSocket] 当前不在 all 视图，跳过新条目: \(item.id)")
+                return
+            }
+            
             // 避免重复
             if !items.contains(where: { $0.id == item.id }) {
                 // 确保图片状态已初始化
@@ -538,6 +568,9 @@ class MainViewModel: ObservableObject {
     }
     
     private func handleNewClipboardEntry(_ entry: ClipboardEntry) {
+        // 只有在 "all" 视图时才将新条目添加到列表中
+        guard selectedCategory == "all" else { return }
+        
         // 本地添加到列表顶部
         if !items.contains(where: { $0.id == entry.id }) {
             items.insert(entry, at: 0)

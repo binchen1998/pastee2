@@ -34,11 +34,6 @@ struct ClipboardCardView: View {
         .overlay(alignment: .topLeading) {
             statusIndicator
         }
-        .overlay(alignment: .topTrailing) {
-            bookmarkButton
-                .offset(x: 5, y: -5)
-                .opacity(isHovering ? 1 : 0)
-        }
         .overlay(alignment: .bottomLeading) {
             // 时间 overlay（悬停时显示）
             Text(relativeTime(from: item.createdAt))
@@ -87,7 +82,7 @@ struct ClipboardCardView: View {
             .font(.system(size: 13))
             .foregroundColor(Theme.textPrimary)
             .lineLimit(2)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
     }
     
     private var imageContent: some View {
@@ -228,11 +223,8 @@ struct ClipboardCardView: View {
                     .foregroundColor(Theme.delete)
                 Text("Failed")
                     .font(.system(size: 10))
-                Button(action: onRetry) {
-                    Text("↻")
-                        .font(.system(size: 10))
-                }
-                .buttonStyle(.plain)
+                Text("↻")
+                    .font(.system(size: 10))
             }
             .foregroundColor(.white)
             .padding(.horizontal, 6)
@@ -240,18 +232,11 @@ struct ClipboardCardView: View {
             .background(Color.red.opacity(0.8))
             .cornerRadius(4)
             .offset(x: -4, y: -4)
+            .onTapGesture {
+                onRetry()
+            }
+            .help("Click to Retry Upload")
         }
-    }
-    
-    // MARK: - Bookmark Button
-    
-    private var bookmarkButton: some View {
-        Button(action: onToggleBookmark) {
-            Text(item.isBookmarked ? "❤" : "♡")
-                .font(.system(size: item.isBookmarked ? 15 : 18))
-                .foregroundColor(item.isBookmarked ? Theme.delete : Theme.textSecondary)
-        }
-        .buttonStyle(.plain)
     }
     
     // MARK: - Downloading Indicator
@@ -294,7 +279,6 @@ struct ClipboardCardView: View {
                 }
                 .buttonStyle(.plain)
                 .help("View Image")
-                .help("View Image")
             }
             
             Button(action: onDelete) {
@@ -304,6 +288,15 @@ struct ClipboardCardView: View {
             }
             .buttonStyle(.plain)
             .help("Delete")
+            
+            // Bookmark Button
+            Button(action: onToggleBookmark) {
+                Text(item.isBookmarked ? "❤" : "♡")
+                    .font(.system(size: 17))
+                    .foregroundColor(item.isBookmarked ? Theme.delete : Theme.textSecondary)
+            }
+            .buttonStyle(.plain)
+            .help("Toggle Bookmark")
         }
     }
     

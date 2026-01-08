@@ -730,12 +730,16 @@ namespace Pastee.App.ViewModels
 
         public async Task FetchItemsAsync(int page)
         {
-            if (IsLoading) return;
+            System.Diagnostics.Debug.WriteLine($"[MainVM] 开始 FetchItems: page={page}, category={_selectedCategory}, search={SearchText}, IsLoading={IsLoading}");
             
-            System.Diagnostics.Debug.WriteLine($"[MainVM] 开始 FetchItems: page={page}, category={_selectedCategory}, search={SearchText}");
-            
+            // 取消之前的请求
             _fetchCts?.Cancel();
             _fetchCts = new System.Threading.CancellationTokenSource();
+            var currentCts = _fetchCts;
+            
+            // 保存请求开始时的状态，用于请求完成后验证
+            var requestCategory = _selectedCategory;
+            var requestSearchText = SearchText;
             
             // 根据请求类型设置加载文案
             if (page == 1)
@@ -765,6 +769,14 @@ namespace Pastee.App.ViewModels
                     if (page == 1)
                     {
                         var localItems = await _dataStore.LoadAsync();
+                        
+                        // 检查请求是否已被取消，或 category 是否已改变
+                        if (currentCts.Token.IsCancellationRequested || requestCategory != _selectedCategory)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[MainVM] 请求已取消或 Category 已改变，丢弃草稿结果");
+                            return;
+                        }
+                        
                         var drafts = localItems.Where(i => i.UploadFailed).OrderByDescending(i => i.CreatedAt);
                         foreach (var draft in drafts)
                         {
@@ -804,7 +816,7 @@ namespace Pastee.App.ViewModels
                 
                 try
                 {
-                    remoteItems = await _apiService.GetAsync<List<ClipboardEntry>>(url, _fetchCts.Token);
+                    remoteItems = await _apiService.GetAsync<List<ClipboardEntry>>(url, currentCts.Token);
                 }
                 catch (System.Net.Http.HttpRequestException ex)
                 {
@@ -812,7 +824,7 @@ namespace Pastee.App.ViewModels
                     errorMsg = $"Network error: {ex.Message}";
                     System.Diagnostics.Debug.WriteLine($"[MainVM] 网络请求异常: {ex.Message}");
                 }
-                catch (TaskCanceledException ex) when (!_fetchCts.Token.IsCancellationRequested)
+                catch (TaskCanceledException ex) when (!currentCts.Token.IsCancellationRequested)
                 {
                     // 超时（非用户主动取消）
                     networkError = true;
@@ -828,6 +840,13 @@ namespace Pastee.App.ViewModels
 
                 if (remoteItems != null)
                 {
+                    // 检查请求是否已被取消，或 category/搜索条件是否已改变
+                    if (currentCts.Token.IsCancellationRequested || requestCategory != _selectedCategory || requestSearchText != SearchText)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[MainVM] 请求已取消或 Category/搜索已改变，丢弃结果");
+                        return;
+                    }
+                    
                     System.Diagnostics.Debug.WriteLine($"[MainVM] 成功从服务器获取 {remoteItems.Count} 条数据");
 
                     foreach (var item in remoteItems)
@@ -862,6 +881,13 @@ namespace Pastee.App.ViewModels
                 }
                 else if (page == 1)
                 {
+                    // 检查请求是否已被取消，或 category/搜索条件是否已改变
+                    if (currentCts.Token.IsCancellationRequested || requestCategory != _selectedCategory || requestSearchText != SearchText)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[MainVM] 请求已取消或 Category/搜索已改变，丢弃缓存结果");
+                        return;
+                    }
+                    
                     System.Diagnostics.Debug.WriteLine("[MainVM] 服务器返回空或失败，回退到本地缓存");
                     
                     // 从专门的第一页缓存加载
@@ -897,6 +923,13 @@ namespace Pastee.App.ViewModels
                 // 发生异常时尝试从本地缓存加载
                 if (page == 1)
                 {
+                    // 检查请求是否已被取消，或 category/搜索条件是否已改变
+                    if (currentCts.Token.IsCancellationRequested || requestCategory != _selectedCategory || requestSearchText != SearchText)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[MainVM] 请求已取消或 Category/搜索已改变，丢弃异常处理结果");
+                        return;
+                    }
+                    
                     var cachedItems = await _dataStore.LoadFirstPageCacheAsync();
                     foreach (var item in cachedItems.OrderByDescending(i => i.CreatedAt))
                     {
@@ -968,7 +1001,13 @@ namespace Pastee.App.ViewModels
             _lastCapturedSignature = currentSignature;
 
             entry.InitializeImageState();
-            Items.Insert(0, entry);
+            
+            // 只有在 "all" 视图时才将新条目添加到列表中
+            // 在其他 category 视图时不显示，因为新条目不属于该 category
+            if (SelectedCategory == "all")
+            {
+                Items.Insert(0, entry);
+            }
             
             // 发起异步上传
             _ = PerformUploadAsync(entry);
