@@ -64,6 +64,17 @@ struct ClipboardPopupView: View {
                         .padding(.bottom, 30)
                 }
             }
+            
+            // 右下角 Resize 指示器
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    ResizeGripView()
+                        .padding(.trailing, 4)
+                        .padding(.bottom, 4)
+                }
+            }
         }
         .onAppear {
             // 加载保存的侧边栏状态
@@ -597,6 +608,26 @@ struct CategoryRow: View {
         .onHover { hovering in
             isHovering = hovering
         }
+    }
+}
+
+// MARK: - ResizeGripView
+
+struct ResizeGripView: View {
+    var body: some View {
+        // 三条斜线组成的 resize 图标
+        ZStack {
+            ForEach(0..<3, id: \.self) { index in
+                Rectangle()
+                    .fill(Theme.textSecondary.opacity(0.5))
+                    .frame(width: 2, height: CGFloat(6 + index * 4))
+                    .offset(x: CGFloat(index * 4), y: CGFloat(-index * 2))
+            }
+        }
+        .frame(width: 14, height: 14)
+        .rotationEffect(.degrees(-45))
+        .opacity(0.6)
+        .help("拖动调整窗口大小")
     }
 }
 
