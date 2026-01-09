@@ -43,7 +43,7 @@ namespace Pastee.App.Services
             Directory.CreateDirectory(_imageDirectory);
         }
 
-        public async Task SaveWindowSettingsAsync(double width, double height, string? hotkey = null, bool? hideAfterPaste = null, bool? sidebarVisible = null)
+        public async Task SaveWindowSettingsAsync(double width, double height, string? hotkey = null, bool? hideAfterPaste = null, bool? sidebarVisible = null, bool? alwaysOnTop = null)
         {
             await _fileLock.WaitAsync();
             try
@@ -64,6 +64,9 @@ namespace Pastee.App.Services
                 
                 bool finalSidebarVisible = sidebarVisible ?? current?.SidebarVisible ?? true;
                 settings.Add("SidebarVisible", finalSidebarVisible);
+
+                bool finalAlwaysOnTop = alwaysOnTop ?? current?.AlwaysOnTop ?? true;
+                settings.Add("AlwaysOnTop", finalAlwaysOnTop);
                 
                 string json = JsonSerializer.Serialize(settings, _options);
                 await File.WriteAllTextAsync(_settingsFile, json);
@@ -107,6 +110,7 @@ namespace Pastee.App.Services
             public string Hotkey { get; set; } = "Win + V";
             public bool HideAfterPaste { get; set; } = true;
             public bool SidebarVisible { get; set; } = true;
+            public bool AlwaysOnTop { get; set; } = true;
         }
 
     public async Task<IReadOnlyList<ClipboardEntry>> LoadDraftsAsync()

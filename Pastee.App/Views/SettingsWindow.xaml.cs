@@ -30,6 +30,7 @@ namespace Pastee.App.Views
             
             InitializeAutoStartStatus();
             InitializeHideAfterPasteStatus();
+            InitializeAlwaysOnTopStatus();
             InitializeThemeStatus();
             
             // 检查是否是管理员，显示管理员面板入口
@@ -110,6 +111,16 @@ namespace Pastee.App.Views
         private void OnHideAfterPasteToggle(object sender, RoutedEventArgs e)
         {
             _viewModel.HideAfterPaste = HideAfterPasteCheckBox.IsChecked ?? true;
+        }
+
+        private void InitializeAlwaysOnTopStatus()
+        {
+            AlwaysOnTopCheckBox.IsChecked = _viewModel.AlwaysOnTop;
+        }
+
+        private void OnAlwaysOnTopToggle(object sender, RoutedEventArgs e)
+        {
+            _viewModel.AlwaysOnTop = AlwaysOnTopCheckBox.IsChecked ?? true;
         }
 
         private void InitializeAutoStartStatus()

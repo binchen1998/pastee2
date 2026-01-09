@@ -505,6 +505,7 @@ extension Notification.Name {
     static let uploadCompleted = Notification.Name("uploadCompleted")
     static let uploadFailed = Notification.Name("uploadFailed")
     static let adjustWindowWidth = Notification.Name("adjustWindowWidth")
+    static let alwaysOnTopChanged = Notification.Name("alwaysOnTopChanged")
 }
 
 // MARK: - KeyablePanel

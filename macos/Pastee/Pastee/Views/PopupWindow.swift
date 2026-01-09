@@ -25,6 +25,7 @@ class FirstClickHostingView<Content: View>: NSHostingView<Content> {
 class PopupWindow: NSPanel {
     private var contentHostingView: FirstClickHostingView<ClipboardPopupView>?
     private static let frameSaveKey = "PopupWindowFrame"
+    private var isAlwaysOnTop: Bool = true
     
     // 允许成为key窗口以接收键盘事件，但不成为主窗口
     override var canBecomeKey: Bool { true }
@@ -54,7 +55,8 @@ class PopupWindow: NSPanel {
         self.standardWindowButton(.zoomButton)?.isHidden = true
         
         // 关键设置：浮动窗口，不激活应用
-        self.level = .floating
+        let settings = SettingsManager.shared.load()
+        updateAlwaysOnTop(settings.alwaysOnTop)
         self.isMovableByWindowBackground = true
         self.backgroundColor = .clear
         self.isOpaque = false
@@ -100,6 +102,14 @@ class PopupWindow: NSPanel {
             name: .adjustWindowWidth,
             object: nil
         )
+
+        // 监听置顶开关变化
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAlwaysOnTopChanged(_:)),
+            name: .alwaysOnTopChanged,
+            object: nil
+        )
     }
     
     deinit {
@@ -131,6 +141,16 @@ class PopupWindow: NSPanel {
         }
         
         print("⚡️ [PopupWindow] Adjusted window width by \(widthDelta), new width: \(newFrame.size.width)")
+    }
+
+    @objc private func handleAlwaysOnTopChanged(_ notification: Notification) {
+        guard let enabled = notification.object as? Bool else { return }
+        updateAlwaysOnTop(enabled)
+    }
+
+    private func updateAlwaysOnTop(_ enabled: Bool) {
+        isAlwaysOnTop = enabled
+        self.level = enabled ? .floating : .normal
     }
     
     private func positionNearCorner() {

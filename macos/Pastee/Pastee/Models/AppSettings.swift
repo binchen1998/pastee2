@@ -13,6 +13,7 @@ struct AppSettings: Codable {
     var launchAtLogin: Bool = false
     var darkMode: Bool = true
     var sidebarVisible: Bool = true
+    var alwaysOnTop: Bool = true
     
     enum CodingKeys: String, CodingKey {
         case hotkey
@@ -20,6 +21,7 @@ struct AppSettings: Codable {
         case launchAtLogin = "launch_at_login"
         case darkMode = "dark_mode"
         case sidebarVisible = "sidebar_visible"
+        case alwaysOnTop = "always_on_top"
     }
 }
 

@@ -16,6 +16,7 @@ struct SettingsView: View {
     @State private var hideAfterPaste = true
     @State private var currentHotkey = "Command + Shift + V"
     @State private var isDarkMode = true
+    @State private var alwaysOnTop = true
     @ObservedObject private var themeManager = ThemeManager.shared
     
     private var currentHotkeyDescription: String {
@@ -101,6 +102,18 @@ struct SettingsView: View {
                         )
                         .onChange(of: hideAfterPaste) { newValue in
                             saveSettings()
+                        }
+                        
+                        // Always On Top
+                        settingToggleRow(
+                            icon: "📌",
+                            iconColor: Color(hex: "#2980b9"),
+                            title: "Always On Top",
+                            subtitle: "Keep Pastee above other windows",
+                            isOn: $alwaysOnTop
+                        )
+                        .onChange(of: alwaysOnTop) { _ in
+                            saveSettings(notifyAlwaysOnTopChange: true)
                         }
                         
                         // Dark Mode
@@ -307,6 +320,7 @@ struct SettingsView: View {
         hideAfterPaste = settings.hideAfterPaste
         currentHotkey = settings.hotkey
         isDarkMode = themeManager.isDarkMode
+        alwaysOnTop = settings.alwaysOnTop
         
         deviceId = AuthService.shared.getDeviceId()
         version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
@@ -372,11 +386,16 @@ struct SettingsView: View {
         }
     }
     
-    private func saveSettings() {
+    private func saveSettings(notifyAlwaysOnTopChange: Bool = false) {
         var settings = SettingsManager.shared.load()
         settings.launchAtLogin = autoStart
         settings.hideAfterPaste = hideAfterPaste
+        settings.alwaysOnTop = alwaysOnTop
         SettingsManager.shared.save(settings)
+        
+        if notifyAlwaysOnTopChange {
+            NotificationCenter.default.post(name: .alwaysOnTopChanged, object: alwaysOnTop)
+        }
     }
     
     private func openSupportEmail() {

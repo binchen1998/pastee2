@@ -45,6 +45,7 @@ namespace Pastee.App.ViewModels
         private string _userEmail = string.Empty;
         private string _currentHotkey = "Win + V";
         private bool _hideAfterPaste = true;
+        private bool _alwaysOnTop = true;
         private string _loadingText = "Loading...";
         private bool _isShowingCachedData;
         private string _networkErrorMessage = string.Empty;
@@ -157,6 +158,20 @@ namespace Pastee.App.ViewModels
                 
                 // 自动保存设置
                 _ = _dataStore.SaveWindowSettingsAsync(0, 0, null, _hideAfterPaste);
+            }
+        }
+
+        public bool AlwaysOnTop
+        {
+            get => _alwaysOnTop;
+            set
+            {
+                if (_alwaysOnTop == value) return;
+                _alwaysOnTop = value;
+                OnPropertyChanged(nameof(AlwaysOnTop));
+
+                // Persist preference
+                _ = _dataStore.SaveWindowSettingsAsync(0, 0, null, null, null, _alwaysOnTop);
             }
         }
 
@@ -546,6 +561,8 @@ namespace Pastee.App.ViewModels
                 }
                 _hideAfterPaste = settings.HideAfterPaste;
                 OnPropertyChanged(nameof(HideAfterPaste));
+                _alwaysOnTop = settings.AlwaysOnTop;
+                OnPropertyChanged(nameof(AlwaysOnTop));
             }
 
             // 1. 获取用户信息

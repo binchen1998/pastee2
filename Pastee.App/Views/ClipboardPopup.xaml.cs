@@ -30,6 +30,7 @@ namespace Pastee.App.Views
             InitializeComponent();
             _viewModel = viewModel;
             DataContext = _viewModel;
+            SetBinding(TopmostProperty, new Binding(nameof(MainViewModel.AlwaysOnTop)) { Source = _viewModel });
             Loaded += OnLoaded;
             
             // Preview mouse events to handle click vs drag
@@ -143,6 +144,10 @@ namespace Pastee.App.Views
             {
                 UpdateClearDraftsButtonVisibility();
             }
+            else if (e.PropertyName == nameof(_viewModel.AlwaysOnTop))
+            {
+                this.Topmost = _viewModel.AlwaysOnTop;
+            }
         }
 
         private void UpdateClearDraftsButtonVisibility()
@@ -197,6 +202,7 @@ namespace Pastee.App.Views
                 this.Height = settings.Height;
                 _viewModel.CurrentHotkey = settings.Hotkey;
                 _sidebarVisible = settings.SidebarVisible;
+                _viewModel.AlwaysOnTop = settings.AlwaysOnTop;
                 // 初始化时不改变窗口宽度，只设置侧边栏状态
                 ApplySidebarVisual();
             }
@@ -235,7 +241,7 @@ namespace Pastee.App.Views
                 // 使用 SW_SHOWNOACTIVATE 显示，完全不干扰原窗口
                 NativeMethods.ShowWindow(hwnd, NativeMethods.SW_SHOWNOACTIVATE);
                 this.Visibility = Visibility.Visible;
-                this.Topmost = true;
+                this.Topmost = _viewModel.AlwaysOnTop;
 
                 // Briefly prevent immediate re-triggering
                 Dispatcher.BeginInvoke(new Action(() => { _isShowing = false; }), 

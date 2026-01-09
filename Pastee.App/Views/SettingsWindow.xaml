@@ -141,6 +141,21 @@
                         <CheckBox x:Name="HideAfterPasteCheckBox" Grid.Column="2" Style="{StaticResource SwitchStyle}" VerticalAlignment="Center" Click="OnHideAfterPasteToggle"/>
                     </Grid>
 
+                    <!-- Always On Top -->
+                    <Grid Style="{StaticResource SettingItemStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="📌" FontSize="20" Foreground="#2980b9" VerticalAlignment="Top" Margin="0,5,0,0"/>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="Always On Top" FontSize="15" FontWeight="Medium" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <TextBlock Text="Keep Pastee window above others" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                        <CheckBox x:Name="AlwaysOnTopCheckBox" Grid.Column="2" Style="{StaticResource SwitchStyle}" VerticalAlignment="Center" Click="OnAlwaysOnTopToggle"/>
+                    </Grid>
+
                     <!-- Theme Toggle -->
                     <Grid Style="{StaticResource SettingItemStyle}">
                         <Grid.ColumnDefinitions>
