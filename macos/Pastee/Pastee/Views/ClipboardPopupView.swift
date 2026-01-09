@@ -427,7 +427,7 @@ CategoryRow(
                 Button(action: {
                     NotificationCenter.default.post(name: .showSettingsWindow, object: nil)
                 }) {
-                    Text("⚙")
+                    Text("🔧")
                         .font(.system(size: 22))
                         .frame(width: 32, height: 32)
                 }

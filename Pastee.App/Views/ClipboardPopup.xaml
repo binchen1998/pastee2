@@ -455,7 +455,7 @@
                     
                     <!-- Settings Button -->
                     <Button Style="{StaticResource IconButtonStyle}"
-                            Content="⚙" 
+                            Content="🔧" 
                             FontSize="15"
                             Width="32" Height="32"
                             Click="OnSettingsButtonClick"
