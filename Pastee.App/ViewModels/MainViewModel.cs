@@ -517,6 +517,14 @@ namespace Pastee.App.ViewModels
             {
                 System.Diagnostics.Debug.WriteLine($"[MainVM] 准备插入新条目: {item.Id}");
                 
+                // 只有在 "all" 视图时才将新条目添加到列表中
+                // 在其他 category 视图时不显示，因为新条目不属于该 category
+                if (SelectedCategory != "all")
+                {
+                    System.Diagnostics.Debug.WriteLine($"[MainVM] 当前不在 all 视图（当前: {SelectedCategory}），跳过新条目: {item.Id}");
+                    return;
+                }
+                
                 // 检查是否已存在（避免重复）
                 if (Items.All(i => i.Id != item.Id))
                 {
