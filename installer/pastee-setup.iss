@@ -5,7 +5,7 @@
 #expr Exec("dotnet", "publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false", "..\Pastee.App", 1, SW_SHOW)
 
 #define MyAppName "Pastee"
-#define MyAppVersion "3.8.5"
+#define MyAppVersion "3.9.0"
 #define MyAppPublisher "Pastee"
 #define MyAppURL "https://pastee.im"
 #define MyAppExeName "Pastee.App.exe"
